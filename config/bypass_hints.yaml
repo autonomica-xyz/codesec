@@ -1,0 +1,77 @@
+# Per-CWE / attack-class adversarial bypass hints for the validate panel.
+# Injected from review round 2 onward ("attack the angles the panel
+# hasn't covered" gets concrete ammunition); hints_all_rounds widens it
+# to every round. Hints are phrased as ATTEMPTS — the reviewer should
+# try them against any defense found, not merely read them.
+#
+# CWE keys match the finding's cwe exactly. Free-form lowercase keys are
+# substring-matched against vuln_class / the task's attack_class
+# (e.g. key "idor" matches vuln_class "idor_note"). A malformed file is
+# ignored with a warning — it never aborts a run.
+
+CWE-89:   # SQL injection
+  - "try stacked queries via ';' if the driver allows multi-statements"
+  - "try second-order: a value stored now concatenated into a query later"
+  - "try a numeric context with no quotes — the wrong variable may be parameterised"
+  - "try ORDER BY / LIMIT / identifier positions — they cannot be parameterised"
+  - "try a comment terminator (-- or /*) to truncate the intended clause"
+
+CWE-78:   # OS command injection
+  - "try argument injection (leading '-', '--flag=val') when argv form is used"
+  - "try a shell metachar in a value the callee itself passes to a shell"
+  - "try $(...) or backticks if any downstream eval exists"
+  - "try newline / CRLF to split into a second command"
+
+CWE-79:   # XSS
+  - "try a context mismatch: an HTML-encoded value placed in a JS string or URL"
+  - "try javascript: / data: URIs in href or src"
+  - "try DOM clobbering, SVG <script>, template-literal injection"
+  - "try event-handler attributes (onerror, onload)"
+
+CWE-22:   # Path traversal
+  - "try URL-encoded ..%2f and double-encoded ..%252f"
+  - 'try Windows separators ..\, mixed / and \, or a UNC path'
+  - "try a symlink inside the base dir pointing outside"
+  - "try an absolute path when only ../ is filtered"
+
+CWE-94:   # Code injection / eval / SSTI
+  - "try {{7*7}} / ${7*7} / <%= 7*7 %> to fingerprint the template engine"
+  - "try reaching the object graph: ''.__class__.mro() subclasses or equivalent"
+  - "try an expression that survives the sandbox's identifier blacklist"
+  - "try nested evaluation: a value the template renders twice"
+
+CWE-918:  # SSRF
+  - "try decimal/octal/hex IPs (2130706433, 0x7f000001, 0177.0.0.1)"
+  - "try IPv6 [::ffff:127.0.0.1], [::], 0.0.0.0"
+  - "try a redirect chain to an internal host, or gopher:// / file:// schemes"
+  - "try DNS rebinding / TOCTOU between resolve and connect"
+  - "try cloud metadata endpoints (169.254.169.254)"
+
+CWE-502:  # Unsafe deserialization
+  - "try a gadget chain reachable from an allowed type's transitive deps"
+  - "try a polymorphic type field (@class, $type) pointing at a dangerous type"
+  - "try a nested or wrapped payload that passes the outer allowlist"
+
+ssrf:
+  - "try an allowlist prefix/suffix trick: evil-trusted.com or trusted.com.evil.tld"
+  - "try userinfo: https://trusted.com@169.254.169.254/"
+  - "try an allowed URL that redirects to an internal one"
+
+idor:
+  - "try sequential, negative, and zero IDs plus other tenants' IDs"
+  - "try the same ID on sibling endpoints (export, share, print view)"
+  - "try GUID-vs-integer confusion or an encoded/padded ID"
+
+mass_assignment:
+  - "try adding role / is_admin / verified / owner fields to the update body"
+  - "try overwriting a foreign key or balance field alongside the intended one"
+  - 'try nested JSON ({"role": "admin"} inside an allowed object)'
+
+open_redirect:
+  - "try //evil.tld, /\\evil.tld, or https://trusted.com@evil.tld"
+  - "try whitespace or control chars before the scheme, or a unicode-normalised host"
+  - "try a redirect chain that lands off-domain"
+
+deserialization:
+  - "try yaml tags (!!python/object) when safe_load is claimed"
+  - "try a pickle opcode payload in a base64-wrapped field"

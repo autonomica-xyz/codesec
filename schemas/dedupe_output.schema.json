@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DedupeOutput",
+  "description": "Clustered confirmed findings — one group per root cause.",
+  "type": "object",
+  "required": ["groups"],
+  "additionalProperties": false,
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["group_id", "root_cause", "member_finding_ids", "canonical_finding_id"],
+        "additionalProperties": false,
+        "properties": {
+          "group_id": { "type": "string", "pattern": "^g_[a-z0-9_-]{1,64}$" },
+          "root_cause": {
+            "type": "string",
+            "minLength": 20,
+            "description": "The single underlying defect that explains every member finding."
+          },
+          "member_finding_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "canonical_finding_id": {
+            "type": "string",
+            "description": "Member id that best exemplifies the bug — usually the highest severity / clearest PoC."
+          },
+          "replace_canonical_with": {
+            "type": "string",
+            "description": "Optional: a member finding_id whose evidence story is strictly better than canonical_finding_id's (successful PoC, tighter trace, clearer description). When set, the pipeline swaps canonical and audits the reason."
+          },
+          "replacement_reason": {
+            "type": "string",
+            "description": "Required in spirit when replace_canonical_with is set — why the proposed member has the better evidence story."
+          },
+          "variant_summary": {
+            "type": "string",
+            "description": "Brief note on how members differ (different call sites, different inputs, etc.)."
+          }
+        }
+      }
+    }
+  }
+}

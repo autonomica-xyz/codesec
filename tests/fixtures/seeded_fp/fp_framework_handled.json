@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "category": "framework_handled",
+    "why_false": "The value is rendered through Jinja's autoescaping render_template, not render_template_string \u2014 the framework neutralizes the markup.",
+    "expected_verdict": "rejected",
+    "task": {
+      "attack_class": "xss",
+      "scope_hint": "note rendering",
+      "rationale": "hunter claims stored note body is reflected raw",
+      "target_files": [
+        "app.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_framework_handled",
+  "file": "app.py",
+  "line_start": 95,
+  "line_end": 97,
+  "vuln_class": "xss",
+  "cwe": "CWE-79",
+  "severity": "high",
+  "description": "Stored note body is rendered back to the dashboard without escaping \u2014 stored XSS.",
+  "evidence_snippet": "return render_template('note.html', note=note)",
+  "confidence": 0.75,
+  "hedged_language": false
+}

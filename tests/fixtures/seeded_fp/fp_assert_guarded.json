@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "category": "assert_guarded_path",
+    "why_false": "The sink is guarded by 'assert user.is_admin' \u2014 asserts are compiled out under -O and the check is the only barrier; in a release build the guard may vanish, but as written the path is not attacker-reachable without admin.",
+    "expected_verdict": "rejected",
+    "expected_production_viable": "no",
+    "task": {
+      "attack_class": "code_injection",
+      "scope_hint": "admin helpers",
+      "rationale": "hunter claims unauthenticated eval path",
+      "target_files": [
+        "utils.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_assert_guarded",
+  "file": "utils.py",
+  "line_start": 60,
+  "line_end": 63,
+  "vuln_class": "code_injection",
+  "cwe": "CWE-94",
+  "severity": "critical",
+  "description": "Debug expression evaluator calls eval() on operator input; claimed as unauthenticated RCE.",
+  "evidence_snippet": "def debug_eval(user, expr):\n    assert user.is_admin, 'admin only'\n    return eval(expr)",
+  "confidence": 0.95,
+  "hedged_language": false
+}

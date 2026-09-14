@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "category": "allowlisted_redirect",
+    "why_false": "The redirect target is checked against a host allowlist before use; only same-host paths pass, so off-domain redirect is impossible.",
+    "expected_verdict": "rejected",
+    "task": {
+      "attack_class": "open_redirect",
+      "scope_hint": "app.py /go handler",
+      "rationale": "hunter claims next= is attacker-controlled",
+      "target_files": [
+        "app.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_decoy_redirect",
+  "file": "app.py",
+  "line_start": 106,
+  "line_end": 112,
+  "vuln_class": "open_redirect",
+  "cwe": "CWE-601",
+  "severity": "medium",
+  "description": "The next parameter is passed straight to redirect(), enabling off-domain phishing redirects.",
+  "evidence_snippet": "host = urlparse(nxt).hostname\nif host and host not in ALLOWED_HOSTS:\n    abort(400)\nreturn redirect(nxt)",
+  "confidence": 0.8,
+  "hedged_language": false
+}

@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "category": "dev_only_config",
+    "why_false": "The verbose-error block sits behind an env flag read only in the dev launcher; the production entrypoint never sets it, so the path is dev-only.",
+    "expected_verdict": "rejected",
+    "expected_production_viable": "no",
+    "task": {
+      "attack_class": "info_disclosure",
+      "scope_hint": "app.py error handling",
+      "rationale": "hunter claims stack traces leak to users",
+      "target_files": [
+        "app.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_dev_only_config",
+  "file": "app.py",
+  "line_start": 140,
+  "line_end": 144,
+  "vuln_class": "information_disclosure",
+  "cwe": "CWE-209",
+  "severity": "medium",
+  "description": "Error handler returns full tracebacks to clients, leaking internal paths and code.",
+  "evidence_snippet": "if os.environ.get('DEVSHOP_DEV_ERRORS'):\n    app.config['PROPAGATE_EXCEPTIONS'] = True",
+  "confidence": 0.6,
+  "hedged_language": false
+}

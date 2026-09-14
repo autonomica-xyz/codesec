@@ -1,0 +1,81 @@
+# Minimal Titus + OpenMythos validation pipeline.
+#
+# This configuration assumes externally managed endpoints. On a two-GPU host,
+# keep both endpoints ready. A managed single-GPU runtime may reuse one port
+# while loading the profile requested at each phase boundary.
+
+defaults:
+  max_turns: 25
+  permission_mode: acceptEdits
+  repair_attempts: 1
+
+model_profiles:
+  titus:
+    engine: local
+    endpoint: http://127.0.0.1:8080
+    model: titus-cybersecurity-35b
+    source: AlicanKiraz0/Titus-CybersecurityLLM-v1.0-Q4_K_M-No-MTP-GGUF@d073d8bf57c645476c9f97fb504982c1e7e6bf27:Titus-CybersecurityLLM-v1.0.Q4_K_M.gguf
+    model_path_env: CODESEC_TITUS_GGUF
+    expected_sha256: 2c0c567aaff7461f239cd50f6be826726c94a9b493a8784c56492f7e34810c59
+    context_limit: 32768
+    server_args: [-t, "8", -tb, "8", -np, "4", -fa, "on", -ctk, q8_0, -ctv, q8_0, --jinja]
+    temperature: 0
+    thinking: false
+    max_output_tokens: 4096
+    max_input_chars: 50000
+
+  openmythos:
+    engine: local
+    endpoint: http://127.0.0.1:8081
+    model: openmythos-27b
+    source: reduxdev/OpenMythos-GGUF@ea45a80b1e47dabeacbe6744cc9a8a7e243e2316:OpenMythos-27B-Q6_K.gguf
+    model_path_env: CODESEC_OPENMYTHOS_GGUF
+    expected_sha256: 8b225034431666b0e4723d42efe0aae088c54a84e42ea5f9547f19cb29e2593c
+    context_limit: 32768
+    server_args: [-t, "8", -tb, "8", -np, "4", -fa, "on", -ctk, q8_0, -ctv, q8_0, --jinja, --spec-type, ngram-mod, --spec-draft-n-max, "5", --swa-checkpoints, "5"]
+    temperature: 0
+    thinking: false
+    max_output_tokens: 4096
+    max_input_chars: 50000
+
+stages:
+  recon:
+    profile: titus
+    concurrency: 1
+    tools: [Read, Grep, Glob, Bash]
+    max_turns: 60
+    repair_attempts: 2
+  hunt:
+    profile: titus
+    concurrency: 4
+    tools: [Read, Grep, Glob, Bash]
+  gapfill:
+    profile: titus
+    concurrency: 1
+    tools: [Read, Grep, Glob]
+    repair_attempts: 2
+  feedback:
+    profile: titus
+    concurrency: 1
+    tools: [Read, Grep, Glob]
+  validate:
+    profile: openmythos
+    concurrency: 2
+    tools: [Read, Grep, Glob]
+    rounds: 3                     # local tokens are cheap; small models need the panel
+  dedupe:
+    profile: openmythos
+    concurrency: 1
+    tools: [Read]
+  trace:
+    profile: openmythos
+    concurrency: 2
+    tools: [Read, Grep, Glob, Bash]
+  report:
+    profile: openmythos
+    concurrency: 1
+    tools: [Read]
+
+loops:
+  gapfill_iterations: 1
+  feedback_iterations: 0

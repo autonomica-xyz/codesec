@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "category": "hedged_no_evidence",
+    "why_false": "The description is a hedge ('might', 'could possibly') with a snippet that shows no attacker-controlled input at all \u2014 pure speculation.",
+    "expected_verdict": "rejected",
+    "task": {
+      "attack_class": "ssrf",
+      "scope_hint": "payments.py outbound calls",
+      "rationale": "hunter guessed an outbound call exists",
+      "target_files": [
+        "payments.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_hedged_guess",
+  "file": "payments.py",
+  "line_start": 30,
+  "line_end": 33,
+  "vuln_class": "ssrf",
+  "cwe": "CWE-918",
+  "severity": "high",
+  "description": "The transfer helper might possibly issue an outbound request to an attacker-controlled URL, which could enable SSRF in some configurations.",
+  "evidence_snippet": "def transfer(sender, to, amount):",
+  "confidence": 0.3,
+  "hedged_language": true
+}

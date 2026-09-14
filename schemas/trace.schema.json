@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Trace",
+  "description": "Reachability verdict for a single canonical finding.",
+  "type": "object",
+  "required": ["finding_id", "status", "reachable", "confidence", "rationale"],
+  "additionalProperties": false,
+  "properties": {
+    "finding_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["reachable", "unreachable", "uncertain"],
+      "description": "Application-level reachability decision. Uncertainty is never coerced to unreachable."
+    },
+    "reachable": {
+      "type": ["boolean", "null"],
+      "description": "True for reachable, false for unreachable, null for uncertain."
+    },
+    "entry_points": {
+      "type": "array",
+      "description": "External entry points from which the sink is reachable. Empty if reachable=false.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "location"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string", "description": "http_route|cli|rpc|message_queue|webhook|cron|library_api|file_input" },
+          "location": { "type": "string", "description": "file:line or symbol" },
+          "auth_required": { "type": "boolean" },
+          "controllable_by": { "type": "string" }
+        }
+      }
+    },
+    "call_chain": {
+      "type": "array",
+      "description": "Ordered chain from entry to sink. First element is the entry frame; last is the sink.",
+      "items": {
+        "type": "object",
+        "required": ["file", "function", "line"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string" },
+          "function": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "external_inputs": {
+      "type": "array",
+      "description": "Specific input parameters that flow into the sink.",
+      "items": { "type": "string" }
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "marker": {
+      "type": "object",
+      "description": "Canary-marker result (W6). Present when a deterministic marker was embedded via the live target; verified=true means the EXACT expect string was observed.",
+      "required": ["kind", "token", "verified", "where"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["xss", "ssti", "redirect_host", "generic", "other"] },
+        "token": { "type": "string", "description": "The exact marker/token embedded in the request." },
+        "verified": { "type": "boolean", "description": "True only when the exact expect value was observed in the response." },
+        "where": { "type": "string", "description": "Where the marker was observed: response body, Location header, error text, ..." }
+      }
+    },
+    "rationale": { "type": "string", "minLength": 20 },
+    "blockers": {
+      "type": "array",
+      "description": "Reasons the path is NOT reachable (sanitizers, auth gates, dead code, etc.).",
+      "items": {
+        "type": "object",
+        "required": ["kind", "location", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string", "description": "sanitizer|auth_check|input_validation|dead_code|feature_flag|other" },
+          "location": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "reachable"}}},
+      "then": {
+        "required": ["entry_points", "call_chain", "external_inputs"],
+        "properties": {
+          "reachable": {"const": true},
+          "entry_points": {"minItems": 1},
+          "call_chain": {"minItems": 2},
+          "external_inputs": {"minItems": 1},
+          "marker": {
+            "description": "A reachable verdict may only carry a marker that was actually verified.",
+            "properties": {"verified": {"const": true}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "unreachable"}}},
+      "then": {
+        "required": ["blockers"],
+        "properties": {
+          "reachable": {"const": false},
+          "blockers": {"minItems": 1}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "uncertain"}}},
+      "then": {
+        "required": ["blockers"],
+        "properties": {
+          "reachable": {"type": "null"},
+          "blockers": {"minItems": 1}
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+# Hetzner Inference Cloud — all 8 stages on one hosted OpenAI-compatible
+# endpoint (https://inference.hetzner.com). No local GPU, no Claude login.
+#
+#   export HETZNER_API_KEY=<token>          # console → Inference → tokens
+#   codesec run --repo /path/to/target --config config/hetzner.yaml
+#
+# Swap the model by editing the single `model:` line below (e.g. any id
+# served at GET /api/v1/models). Concurrency assumes a hosted metered API;
+# 429s are retried with backoff by the runner as transient errors.
+
+defaults:
+  max_turns: 25
+  permission_mode: acceptEdits
+  repair_attempts: 1
+
+model_profiles:
+  hetzner:
+    engine: local
+    endpoint: https://inference.hetzner.com/api/v1
+    model: Qwen3.8-27B
+    api_key_env: HETZNER_API_KEY
+    # Hetzner's Qwen models expose a 262,144-token context window.
+    context_limit: 262144
+    temperature: 0
+    # Qwen3.8 on Hetzner returns content:null when thinking is disabled and
+    # the model reasons anyway (output lands in a stripped buffer; seen as
+    # 'Empty assistant output' after 60-turn recon). codesec strips a leading
+    # <think> block, so keep the channel enabled.
+    thinking: true
+    # Thinking + full recon JSON exceeds 8192 (repair loop truncates);
+    # hosted API has no VRAM cap, so give it room.
+    max_output_tokens: 16384
+    max_input_chars: 50000
+
+stages:
+  recon:
+    profile: hetzner
+    concurrency: 1
+    tools: [Read, Grep, Glob, Bash]
+    max_turns: 60
+    repair_attempts: 2
+  hunt:
+    profile: hetzner
+    concurrency: 4
+    tools: [Read, Grep, Glob, Bash]
+  gapfill:
+    profile: hetzner
+    concurrency: 1
+    tools: [Read, Grep, Glob]
+    repair_attempts: 2
+  feedback:
+    profile: hetzner
+    concurrency: 1
+    tools: [Read, Grep, Glob]
+  validate:
+    profile: hetzner
+    concurrency: 2
+    tools: [Read, Grep, Glob]
+  dedupe:
+    profile: hetzner
+    concurrency: 1
+    tools: [Read]
+  trace:
+    profile: hetzner
+    concurrency: 2
+    tools: [Read, Grep, Glob, Bash]
+  report:
+    profile: hetzner
+    concurrency: 1
+    tools: [Read]
+
+loops:
+  gapfill_iterations: 1
+  feedback_iterations: 0

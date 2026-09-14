@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "category": "unreachable_sink",
+    "why_false": "import_legacy_config contains yaml.load with UnsafeLoader but no caller exists anywhere in the application \u2014 no route, CLI, or plugin registration reaches it.",
+    "expected_verdict": "needs_more_info",
+    "expected_note": "Panel should surface the missing caller in missing_preconditions rather than assert reachability.",
+    "task": {
+      "attack_class": "deserialization",
+      "scope_hint": "utils.py import helpers",
+      "rationale": "hunter claims attacker YAML reaches UnsafeLoader",
+      "target_files": [
+        "utils.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_unreachable_sink",
+  "file": "utils.py",
+  "line_start": 44,
+  "line_end": 45,
+  "vuln_class": "insecure_deserialization",
+  "cwe": "CWE-502",
+  "severity": "high",
+  "description": "YAML import path uses yaml.load with UnsafeLoader, giving arbitrary object construction to any caller.",
+  "evidence_snippet": "def import_legacy_config(text: str) -> dict:\n    return yaml.load(text, Loader=yaml.UnsafeLoader)",
+  "confidence": 0.8,
+  "hedged_language": false
+}

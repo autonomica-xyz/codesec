@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "category": "safe_lookalike",
+    "why_false": "The snippet calls yaml.safe_load; the hunter cited the function name 'safe_yaml_load' but reported it as UnsafeLoader. The dangerous twin lives elsewhere and is uncalled.",
+    "expected_verdict": "rejected",
+    "task": {
+      "attack_class": "deserialization",
+      "scope_hint": "utils.py yaml helpers",
+      "rationale": "hunter flagged yaml.load usage",
+      "target_files": [
+        "utils.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_safe_yaml",
+  "file": "utils.py",
+  "line_start": 41,
+  "line_end": 42,
+  "vuln_class": "insecure_deserialization",
+  "cwe": "CWE-502",
+  "severity": "high",
+  "description": "YAML parsing uses an unsafe loader allowing arbitrary object instantiation from request bodies.",
+  "evidence_snippet": "def safe_yaml_load(text: str) -> dict:\n    return yaml.safe_load(text)",
+  "confidence": 0.85,
+  "hedged_language": false
+}

@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Report",
+  "description": "Final structured report — only reachable, deduped findings.",
+  "type": "object",
+  "required": ["run_id", "target", "summary", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": { "type": "string" },
+    "target": {
+      "type": "object",
+      "required": ["repo_path"],
+      "additionalProperties": false,
+      "properties": {
+        "repo_path": { "type": "string" },
+        "commit": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total", "by_severity"],
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "by_severity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "critical":      { "type": "integer", "minimum": 0 },
+            "high":          { "type": "integer", "minimum": 0 },
+            "medium":        { "type": "integer", "minimum": 0 },
+            "low":           { "type": "integer", "minimum": 0 },
+            "informational": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "title", "severity", "vuln_class", "file", "line_start", "line_end", "description", "evidence", "trace", "recommendation"],
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": { "type": "string" },
+          "title": { "type": "string", "minLength": 5 },
+          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "informational"] },
+          "vuln_class": { "type": "string" },
+          "cwe": { "type": "string", "pattern": "^CWE-[0-9]+$" },
+          "file": { "type": "string" },
+          "line_start": { "type": "integer", "minimum": 1 },
+          "line_end": { "type": "integer", "minimum": 1 },
+          "description": { "type": "string", "minLength": 20 },
+          "evidence": { "type": "string" },
+          "trace": {
+            "type": "object",
+            "required": ["entry_points", "call_chain"],
+            "additionalProperties": false,
+            "properties": {
+              "entry_points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["kind", "location"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": { "type": "string" },
+                    "location": { "type": "string" },
+                    "auth_required": { "type": "boolean" },
+                    "controllable_by": { "type": "string" }
+                  }
+                }
+              },
+              "call_chain": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["file", "function", "line"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": { "type": "string" },
+                    "function": { "type": "string" },
+                    "line": { "type": "integer", "minimum": 1 },
+                    "note": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "poc": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "language": { "type": "string" },
+              "code": { "type": "string" },
+              "succeeded": { "type": "boolean" }
+            }
+          },
+          "variants": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Other finding_ids in the same dedupe group."
+          },
+          "upstream_status": {
+            "type": "string",
+            "enum": ["fixed", "unfixed", "unknown"],
+            "description": "W15 upstream novelty check: whether the bug is already fixed in the upstream repo. 'fixed' entries move to fixed_upstream."
+          },
+          "grading": {
+            "type": "object",
+            "description": "Fresh-eyes grader result (report.grade only). Demote-only: a grader can lower severity and flag issues, never raise them.",
+            "required": ["evidence_score", "demoted"],
+            "additionalProperties": false,
+            "properties": {
+              "evidence_score": { "type": "integer", "minimum": 0, "maximum": 10 },
+              "issues": { "type": "array", "items": { "type": "string" } },
+              "demoted": { "type": "boolean" },
+              "reason": { "type": "string" }
+            }
+          },
+          "production_viable": {
+            "type": "object",
+            "description": "Present when the validation panel ruled the bug does not fire in a production configuration; severity is already dropped one step.",
+            "required": ["verdict"],
+            "additionalProperties": false,
+            "properties": {
+              "verdict": { "type": "string", "enum": ["yes", "no", "unknown"] },
+              "reason": { "type": "string" }
+            }
+          },
+          "recommendation": { "type": "string", "minLength": 20 }
+        }
+      }
+    },
+    "fixed_upstream": {
+      "type": "array",
+      "description": "Confirmed findings already fixed upstream — footnote section, not the main table.",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "file", "vuln_class"],
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": { "type": "string" },
+          "title": { "type": "string" },
+          "file": { "type": "string" },
+          "vuln_class": { "type": "string" }
+        }
+      }
+    },
+    "needs_validation": {
+      "type": "array",
+      "description": "Findings whose validation verdict was needs_more_info — own section, no severity.",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "file", "vuln_class", "blockers"],
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": { "type": "string" },
+          "file": { "type": "string" },
+          "vuln_class": { "type": "string" },
+          "blockers": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "The exact unresolved facts blocking a verdict."
+          },
+          "validation_plan": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "local": { "type": "string" },
+              "deployment": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "hardening": {
+      "type": "array",
+      "description": "Defense-in-depth observations that are not findings.",
+      "items": {
+        "type": "object",
+        "required": ["file", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string" },
+          "note": { "type": "string" },
+          "task_id": { "type": "string" }
+        }
+      }
+    }
+  }
+}

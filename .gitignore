@@ -1,0 +1,79 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Harness state + outputs (regenerated per run)
+state.db*
+work/
+results/
+runs/
+runlogs/
+*.out
+*.log
+*.pid
+*.bak
+
+# Local notes / agent config
+.claude/
+.planning/
+
+# Reference clones and snapshots — not part of this repo
+_remote_snapshot_*/
+harness_repos/
+tsec_repos/
+audit/
+test_target/
+nano-analyzer/
+tsecbench_github_repos.txt
+
+# Local plans / notes
+plans/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated test artifacts
+users.db
+notes.db
+*.sqlite
+*.sqlite3
+
+/REPORT-*.md
+/REPORT.md
+
+# Unsloth runtime cache (written when codesec runs a local model)
+unsloth_compiled_cache/

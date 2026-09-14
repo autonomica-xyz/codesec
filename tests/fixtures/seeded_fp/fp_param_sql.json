@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "category": "parameterized_lookalike",
+    "why_false": "The '?' placeholder is bound by sqlite3; the snippet only looks like string interpolation because the query text sits next to an f-string elsewhere in the file.",
+    "expected_verdict": "rejected",
+    "task": {
+      "attack_class": "sql_injection",
+      "scope_hint": "db.py query helpers",
+      "rationale": "hunter claims raw string concat reaches execute()",
+      "target_files": [
+        "db.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_param_sql",
+  "file": "db.py",
+  "line_start": 21,
+  "line_end": 24,
+  "vuln_class": "sql_injection",
+  "cwe": "CWE-89",
+  "severity": "high",
+  "description": "User-controlled note id is concatenated into the WHERE clause of get_note and executed, allowing arbitrary SQL.",
+  "evidence_snippet": "row = c.execute(\"SELECT id, owner, title, body FROM notes WHERE id = ?\", (nid,)).fetchone()",
+  "confidence": 0.9,
+  "hedged_language": false
+}

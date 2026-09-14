@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "category": "sanitized_upstream",
+    "why_false": "os.path.basename strips all directory components before the join, so '../etc/passwd' collapses to 'passwd' inside UPLOAD_DIR.",
+    "expected_verdict": "rejected",
+    "task": {
+      "attack_class": "path_traversal",
+      "scope_hint": "files.py download handlers",
+      "rationale": "hunter claims the name parameter reaches open() unfiltered",
+      "target_files": [
+        "files.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_basename_traversal",
+  "file": "files.py",
+  "line_start": 24,
+  "line_end": 35,
+  "vuln_class": "path_traversal",
+  "cwe": "CWE-22",
+  "severity": "high",
+  "description": "The 'name' query parameter is joined into a filesystem path and opened, allowing ../ traversal to arbitrary files.",
+  "evidence_snippet": "base = os.path.basename(name)\ntarget = os.path.join(UPLOAD_DIR, base)",
+  "confidence": 0.85,
+  "hedged_language": false
+}

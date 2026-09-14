@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "category": "inflated_severity",
+    "why_false": "The bug is real but trivial \u2014 a missing Secure flag on a session cookie over a deployment that may not even terminate TLS. Claimed 'critical' is pure escalation.",
+    "expected_verdict": "confirmed",
+    "expected_arbiter_severity": "low",
+    "task": {
+      "attack_class": "session_security",
+      "scope_hint": "config.py cookie flags",
+      "rationale": "hunter claims session hijack equals critical",
+      "target_files": [
+        "config.py"
+      ]
+    }
+  },
+  "finding_id": "f_fp_inflated_severity",
+  "file": "config.py",
+  "line_start": 8,
+  "line_end": 8,
+  "vuln_class": "insecure_cookie",
+  "cwe": "CWE-614",
+  "severity": "critical",
+  "description": "SESSION_COOKIE_SECURE is False; attacker can steal every session and fully compromise all accounts \u2014 critical.",
+  "evidence_snippet": "SESSION_COOKIE_SECURE = False",
+  "confidence": 0.7,
+  "hedged_language": false
+}
