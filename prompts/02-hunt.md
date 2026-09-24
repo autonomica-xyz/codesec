@@ -37,22 +37,23 @@ drop one.
              "designer_trust": 0.5, "report_partial": true},
   "prior_findings": [{"fp": "...", "vuln_class": "sql_injection",  // optional — already-reported root causes
                       "file": "app.py", "reason": "..."}],
-  "live_target": {
-    "url": "http://server.local:8888",
-    "credentials": {"email": "...", "password": "..."}
-  }
+  "evidence_mode": "static",
+  "live_target": null,
+  "markers": null
 }
 ```
 
-`scope_notes`, `bypass_hints`, `policy`, `prior_findings`, and
-`live_target` are optional. When `bypass_hints` is present, treat each
-entry as a concrete bypass *attempt* to try against the sanitizers you
-find — they are starting points, not claims. When `prior_findings` is
-present, those root causes are already reported — do not re-emit them;
-hunt OTHER classes or variants in these files instead. When
-`live_target` is present, your network egress is allowed **only** to
-that host (and `127.0.0.1`/local loopback). Do not call any other
-external host.
+`scope_notes`, `bypass_hints`, `policy`, and `prior_findings` are
+optional. When `bypass_hints` is present, treat each entry as a concrete
+bypass *attempt* to try against the sanitizers you find — they are
+starting points, not claims. When `prior_findings` is present, those
+root causes are already reported — do not re-emit them; hunt OTHER
+classes or variants in these files instead.
+
+This is a **static, source-only** run: `live_target` is null. There is
+no deployed instance and no URL — do not invent one and do not send
+HTTP requests to any external host. Local, isolated PoCs (running the
+suspect function in-process with your own inputs) remain encouraged.
 
 When `policy` is present it is a pre-assigned hunt strategy — follow
 it, do not ignore it:
@@ -152,22 +153,11 @@ top-level arrays, `hardening` and `uncovered`. No prose.
      failed attempt does not remove the finding: report it with
      `poc.succeeded: false` and the real output; never drop a finding
      because the PoC failed.
-     - If `live_target` is in input: prefer reproducing against the live
-       service — and when the `live_probe` tool is available, test
-       candidate inputs against the running app as you hunt; a
-       request/response observation beats a guessed reachability claim.
-       Record it as `live_evidence` on the finding. Use Bash + `curl` /
-       `python3 -c "import requests..."` to send the actual request.
-       Log in with the credentials if needed. Capture the raw request
-       and response into `poc.code`/`poc.run_output`.
-       Set `poc.language = "curl"` or `"python"`. **If the bug does not
-       reproduce against the live target, preserve the well-founded
-       static candidate and record the failed attempt accurately; the
-       independent validator decides whether it is an environmental
-       mismatch or a falsification.
-     - Otherwise (no `live_target`): compile/run a local PoC in
-       `$scratch_dir` as before, in the target language.
-     - If neither path produces a reproducible proof, omit `poc`. Never
+     - This static run has no `live_target` (it is null): compile/run a
+       **local, isolated** PoC in `$scratch_dir` in the target language —
+       exercising the vulnerable function in-process with your own
+       inputs. Do not send HTTP requests to any external host.
+     - If no PoC is practical, omit `poc`. Never
        lower confidence or severity merely because a PoC was impractical;
        base both on the code evidence and realistic attacker preconditions.
    - If your description uses hedged words ("possibly", "might",

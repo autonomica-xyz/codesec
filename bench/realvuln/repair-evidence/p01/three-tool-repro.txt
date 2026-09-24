@@ -1,0 +1,14 @@
+repo_root: /tmp/tmp2ael1b4u/b8389c35/target
+== Read ==
+1:from flask import request
+2:
+3:
+4:def run():
+5:    payload = request.args.get('p')
+6:    eval(payload)
+== Grep pattern=eval ==
+app.py:6:    eval(payload)
+== Grep pattern=eval path=app.py (file-scoped) ==
+app.py:6:    eval(payload)
+== Glob **/*.py ==
+app.py

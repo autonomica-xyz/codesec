@@ -118,6 +118,10 @@ def test_schema_accepts_marker_on_uncertain_and_unreachable():
         "finding_id": "f_1",
         "confidence": 0.4,
         "rationale": "marker never came back through the live target",
+        "uncertainty": {
+            "kind": "source_evidence",
+            "reason_code": "missing_runtime_evidence",
+        },
         "blockers": [{"kind": "other", "location": "live",
                       "description": "no reflection observed"}],
     }

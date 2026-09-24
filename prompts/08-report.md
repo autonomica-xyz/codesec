@@ -7,9 +7,10 @@ system.
 
 # Objective
 
-Emit one JSON document containing every confirmed, reachable finding
-(canonical members only), with title, evidence, trace, and concrete
-remediation.
+Emit one JSON document containing every confirmed canonical finding
+in `ready_findings`, with title, evidence, trace, and concrete
+remediation. Trace status (reachable / unreachable / uncertain /
+untraced) is annotation, not a reason to omit the finding.
 
 # Inputs
 
@@ -70,15 +71,16 @@ A single JSON object matching `schemas/report.schema.json`. No prose.
      step and copy the verdict into the entry's `production_viable`
      field — a bug that cannot fire in a release build is not
      production-severity. **Be conservative.** "High" means an
-     attacker would actually use it. If the dataset has nothing
-     critical-or-high that you'd stake a reputation on, emit an empty
-     `findings` array and let the summary speak for itself — do not
-     pad to feel productive.
+     attacker would actually use it. Do **not** emit an empty
+     `findings` array to look conservative — every `ready_findings`
+     entry must appear. Lower severity instead of dropping the row.
    - `cwe`: choose the most-specific CWE id (CWE-78 for OS command
      injection, CWE-89 for SQLi, etc.). Omit if uncertain rather than
      guess.
    - `evidence`: verbatim code snippet from the finding.
-   - `trace`: copy `entry_points` and `call_chain` from the trace.
+   - `trace`: copy `status`, `entry_points`, and `call_chain` from the
+     input trace. If `status` is `untraced` or chains are empty, still
+     ship the finding with those empty arrays.
    - `recommendation`: concrete patch direction — name the function,
      name the safer API, mention the input validation. Avoid vague
      "validate user input" advice.
@@ -105,8 +107,9 @@ A single JSON object matching `schemas/report.schema.json`. No prose.
 
 # Constraints
 
-- Only canonical-and-reachable findings appear in `findings`. If the
-  trace says `reachable: false`, the finding does not ship.
+- Every confirmed canonical in `ready_findings` appears in `findings`.
+  Do not drop a finding because trace `status` is `unreachable`,
+  `uncertain`, or `untraced`, or because severity is below high.
 - `needs_validation` entries never carry a severity — a missing fact is
   not a confirmed impact.
 - No editorial commentary, no exec summary prose. The consumer is a

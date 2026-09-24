@@ -1,0 +1,960 @@
+{
+  "scope": "18 scored GLM53 pairs only; smoke excluded",
+  "ablation_warning": "Offline membership rescore of existing findings, sorted by finding_id; not a fresh run or proof of correctness.",
+  "totals": {
+    "dedupe_fallback": 18,
+    "report_fallback": 18,
+    "grep:calls": 8276,
+    "grep:no_matches": 8089,
+    "grep:errors": 187,
+    "glob:calls": 6084,
+    "glob:no_matches": 5677,
+    "glob:errors": 407,
+    "validation:confirmed": 340,
+    "trace:uncertain": 178,
+    "trace:reachable": 156,
+    "uncertain:sink_mismatch": 95,
+    "uncertain:other_contract": 38,
+    "uncertain:model_uncertainty": 45,
+    "uncertain:example_host": 44,
+    "uncertain:marker_or_canary": 45,
+    "hunt_tp_absent_from_final": 98,
+    "pi_tp_absent_from_hunt": 13,
+    "validation:rejected": 43,
+    "trace:unreachable": 6,
+    "validation:needs_more_info": 5
+  },
+  "trial_micro": {
+    "1": {
+      "hunt": {
+        "tp": 60,
+        "fp": 42,
+        "fn": 102,
+        "tn": 29,
+        "precision": 0.5882,
+        "recall": 0.3704,
+        "f3_score": 38.5,
+        "n_repos": 6
+      },
+      "final": {
+        "tp": 31,
+        "fp": 9,
+        "fn": 131,
+        "tn": 29,
+        "precision": 0.775,
+        "recall": 0.1914,
+        "f3_score": 20.7,
+        "n_repos": 6
+      },
+      "pi": {
+        "tp": 27,
+        "fp": 9,
+        "fn": 135,
+        "tn": 29,
+        "precision": 0.75,
+        "recall": 0.1667,
+        "f3_score": 18.1,
+        "n_repos": 6
+      },
+      "confirmed_all": {
+        "tp": 56,
+        "fp": 36,
+        "fn": 106,
+        "tn": 29,
+        "precision": 0.6087,
+        "recall": 0.3457,
+        "f3_score": 36.1,
+        "n_repos": 6
+      },
+      "confirmed_except_unreachable": {
+        "tp": 55,
+        "fp": 36,
+        "fn": 107,
+        "tn": 29,
+        "precision": 0.6044,
+        "recall": 0.3395,
+        "f3_score": 35.5,
+        "n_repos": 6
+      }
+    },
+    "2": {
+      "hunt": {
+        "tp": 60,
+        "fp": 72,
+        "fn": 102,
+        "tn": 28,
+        "precision": 0.4545,
+        "recall": 0.3704,
+        "f3_score": 37.7,
+        "n_repos": 6
+      },
+      "final": {
+        "tp": 32,
+        "fp": 27,
+        "fn": 130,
+        "tn": 29,
+        "precision": 0.5424,
+        "recall": 0.1975,
+        "f3_score": 21.1,
+        "n_repos": 6
+      },
+      "pi": {
+        "tp": 32,
+        "fp": 5,
+        "fn": 130,
+        "tn": 28,
+        "precision": 0.8649,
+        "recall": 0.1975,
+        "f3_score": 21.4,
+        "n_repos": 6
+      },
+      "confirmed_all": {
+        "tp": 59,
+        "fp": 62,
+        "fn": 103,
+        "tn": 29,
+        "precision": 0.4876,
+        "recall": 0.3642,
+        "f3_score": 37.4,
+        "n_repos": 6
+      },
+      "confirmed_except_unreachable": {
+        "tp": 58,
+        "fp": 61,
+        "fn": 104,
+        "tn": 29,
+        "precision": 0.4874,
+        "recall": 0.358,
+        "f3_score": 36.8,
+        "n_repos": 6
+      }
+    },
+    "3": {
+      "hunt": {
+        "tp": 72,
+        "fp": 71,
+        "fn": 90,
+        "tn": 27,
+        "precision": 0.5035,
+        "recall": 0.4444,
+        "f3_score": 45.0,
+        "n_repos": 6
+      },
+      "final": {
+        "tp": 31,
+        "fp": 25,
+        "fn": 131,
+        "tn": 29,
+        "precision": 0.5536,
+        "recall": 0.1914,
+        "f3_score": 20.5,
+        "n_repos": 6
+      },
+      "pi": {
+        "tp": 37,
+        "fp": 6,
+        "fn": 125,
+        "tn": 28,
+        "precision": 0.8605,
+        "recall": 0.2284,
+        "f3_score": 24.7,
+        "n_repos": 6
+      },
+      "confirmed_all": {
+        "tp": 66,
+        "fp": 58,
+        "fn": 96,
+        "tn": 28,
+        "precision": 0.5323,
+        "recall": 0.4074,
+        "f3_score": 41.7,
+        "n_repos": 6
+      },
+      "confirmed_except_unreachable": {
+        "tp": 65,
+        "fp": 58,
+        "fn": 97,
+        "tn": 28,
+        "precision": 0.5285,
+        "recall": 0.4012,
+        "f3_score": 41.1,
+        "n_repos": 6
+      }
+    }
+  },
+  "mean_f3": {
+    "hunt": 40.4,
+    "final": 20.8,
+    "pi": 21.4,
+    "confirmed_all": 38.4,
+    "confirmed_except_unreachable": 37.8
+  },
+  "final_fewer_fp_slugs_per_trial": {
+    "1": 2,
+    "2": 0,
+    "3": 1
+  },
+  "cells": [
+    {
+      "slug": "realvuln-vampi",
+      "trial": 1,
+      "opaque_id": "b8389c35",
+      "h_wall_s": 4166,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "10"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 8,
+        "reachable": 7
+      },
+      "lost_hunt_tp_ids": [
+        "vampi-004",
+        "vampi-005",
+        "vampi-009",
+        "vampi-011"
+      ],
+      "v_wall_s": null,
+      "v_metadata_missing": true,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 2,
+        "read": 7,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-vampi",
+      "trial": 2,
+      "opaque_id": "c3a4b17e",
+      "h_wall_s": 3855,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 6,
+        "reachable": 16
+      },
+      "lost_hunt_tp_ids": [
+        "vampi-006",
+        "vampi-014"
+      ],
+      "v_wall_s": 32,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 4,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-vampi",
+      "trial": 3,
+      "opaque_id": "7cbb68c3",
+      "h_wall_s": 4799,
+      "h_exit_status": 1,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "reachable": 9,
+        "uncertain": 8
+      },
+      "lost_hunt_tp_ids": [
+        "vampi-004",
+        "vampi-005",
+        "vampi-009"
+      ],
+      "v_wall_s": 25,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 5,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-damn-vulnerable-flask-application",
+      "trial": 1,
+      "opaque_id": "68ced559",
+      "h_wall_s": 2667,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "reachable": 6,
+        "uncertain": 4
+      },
+      "lost_hunt_tp_ids": [
+        "damn-vulnerable-flask-app-011"
+      ],
+      "v_wall_s": 18,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 2,
+        "read": 1,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-damn-vulnerable-flask-application",
+      "trial": 2,
+      "opaque_id": "bae45718",
+      "h_wall_s": 2926,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 5,
+        "reachable": 7,
+        "unreachable": 1
+      },
+      "lost_hunt_tp_ids": [
+        "damn-vulnerable-flask-app-007",
+        "damn-vulnerable-flask-app-009",
+        "damn-vulnerable-flask-app-011"
+      ],
+      "v_wall_s": 34,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 3,
+        "read": 1,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-damn-vulnerable-flask-application",
+      "trial": 3,
+      "opaque_id": "e9613330",
+      "h_wall_s": 3126,
+      "h_exit_status": 1,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 4,
+        "reachable": 5
+      },
+      "lost_hunt_tp_ids": [
+        "damn-vulnerable-flask-app-004",
+        "damn-vulnerable-flask-app-005",
+        "damn-vulnerable-flask-app-006",
+        "damn-vulnerable-flask-app-009",
+        "damn-vulnerable-flask-app-011"
+      ],
+      "v_wall_s": 19,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 3,
+        "read": 1,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-python-insecure-app",
+      "trial": 1,
+      "opaque_id": "fa0d72a6",
+      "h_wall_s": 3588,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 4,
+        "reachable": 3,
+        "unreachable": 1
+      },
+      "lost_hunt_tp_ids": [
+        "python-insecure-app-004",
+        "python-insecure-app-005",
+        "python-insecure-app-007"
+      ],
+      "v_wall_s": 15,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 2,
+        "read": 2,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-python-insecure-app",
+      "trial": 2,
+      "opaque_id": "f8437736",
+      "h_wall_s": 4378,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 5,
+        "reachable": 4,
+        "unreachable": 1
+      },
+      "lost_hunt_tp_ids": [
+        "python-insecure-app-004",
+        "python-insecure-app-005",
+        "python-insecure-app-007"
+      ],
+      "v_wall_s": 22,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 3,
+        "read": 2,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-python-insecure-app",
+      "trial": 3,
+      "opaque_id": "f0aa21fe",
+      "h_wall_s": 4750,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 9,
+        "reachable": 3,
+        "unreachable": 1
+      },
+      "lost_hunt_tp_ids": [
+        "python-insecure-app-002",
+        "python-insecure-app-003",
+        "python-insecure-app-005",
+        "python-insecure-app-007"
+      ],
+      "v_wall_s": 18,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 2,
+        "read": 3,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-dvpwa",
+      "trial": 1,
+      "opaque_id": "55daafbb",
+      "h_wall_s": 9443,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 13,
+        "reachable": 6
+      },
+      "lost_hunt_tp_ids": [
+        "dvpwa-004",
+        "dvpwa-009",
+        "dvpwa-011",
+        "dvpwa-012",
+        "dvpwa-013",
+        "dvpwa-017"
+      ],
+      "v_wall_s": 19,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 3,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-dvpwa",
+      "trial": 2,
+      "opaque_id": "1c54849b",
+      "h_wall_s": 4417,
+      "h_exit_status": 1,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "reachable": 7,
+        "uncertain": 7
+      },
+      "lost_hunt_tp_ids": [
+        "dvpwa-002",
+        "dvpwa-012",
+        "dvpwa-013",
+        "dvpwa-023"
+      ],
+      "v_wall_s": 13,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 3,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-dvpwa",
+      "trial": 3,
+      "opaque_id": "58eec561",
+      "h_wall_s": 5366,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 8,
+        "reachable": 8
+      },
+      "lost_hunt_tp_ids": [
+        "dvpwa-005",
+        "dvpwa-008",
+        "dvpwa-009",
+        "dvpwa-010",
+        "dvpwa-012",
+        "dvpwa-013",
+        "dvpwa-014"
+      ],
+      "v_wall_s": 14,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 3,
+        "write": 1,
+        "edit": 1
+      }
+    },
+    {
+      "slug": "realvuln-lets-be-bad-guys",
+      "trial": 1,
+      "opaque_id": "342029a3",
+      "h_wall_s": 4746,
+      "h_exit_status": 1,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 11,
+        "reachable": 10
+      },
+      "lost_hunt_tp_ids": [
+        "lets-be-bad-guys-002",
+        "lets-be-bad-guys-003",
+        "lets-be-bad-guys-009",
+        "lets-be-bad-guys-011",
+        "lets-be-bad-guys-012",
+        "lets-be-bad-guys-014",
+        "lets-be-bad-guys-016",
+        "lets-be-bad-guys-017"
+      ],
+      "v_wall_s": 17,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 1,
+        "read": 2,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-lets-be-bad-guys",
+      "trial": 2,
+      "opaque_id": "96174186",
+      "h_wall_s": 4532,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "reachable": 7,
+        "uncertain": 14
+      },
+      "lost_hunt_tp_ids": [
+        "lets-be-bad-guys-001",
+        "lets-be-bad-guys-003",
+        "lets-be-bad-guys-004",
+        "lets-be-bad-guys-005",
+        "lets-be-bad-guys-013",
+        "lets-be-bad-guys-017"
+      ],
+      "v_wall_s": 96,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 10,
+        "read": 1,
+        "write": 2,
+        "edit": 1
+      }
+    },
+    {
+      "slug": "realvuln-lets-be-bad-guys",
+      "trial": 3,
+      "opaque_id": "979665fa",
+      "h_wall_s": 6230,
+      "h_exit_status": 1,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 10,
+        "reachable": 5
+      },
+      "lost_hunt_tp_ids": [
+        "lets-be-bad-guys-002",
+        "lets-be-bad-guys-004",
+        "lets-be-bad-guys-006",
+        "lets-be-bad-guys-008",
+        "lets-be-bad-guys-010",
+        "lets-be-bad-guys-011",
+        "lets-be-bad-guys-012"
+      ],
+      "v_wall_s": 31,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 4,
+        "read": 1,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-pygoat",
+      "trial": 1,
+      "opaque_id": "23038dab",
+      "h_wall_s": 5520,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "reachable": 9,
+        "uncertain": 11
+      },
+      "lost_hunt_tp_ids": [
+        "pygoat-001",
+        "pygoat-002",
+        "pygoat-017",
+        "pygoat-019",
+        "pygoat-027",
+        "pygoat-037",
+        "pygoat-056"
+      ],
+      "v_wall_s": 42,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 11,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-pygoat",
+      "trial": 2,
+      "opaque_id": "0d748f45",
+      "h_wall_s": 12651,
+      "h_exit_status": 1,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 23,
+        "unreachable": 1,
+        "reachable": 18
+      },
+      "lost_hunt_tp_ids": [
+        "pygoat-002",
+        "pygoat-006",
+        "pygoat-008",
+        "pygoat-016",
+        "pygoat-032",
+        "pygoat-035",
+        "pygoat-036",
+        "pygoat-038",
+        "pygoat-045",
+        "pygoat-056"
+      ],
+      "v_wall_s": 133,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 7,
+        "write": 1
+      }
+    },
+    {
+      "slug": "realvuln-pygoat",
+      "trial": 3,
+      "opaque_id": "3e5fd985",
+      "h_wall_s": 17851,
+      "h_exit_status": 0,
+      "dedupe_fallback": true,
+      "report_fallback": true,
+      "concurrency_values": [
+        "4"
+      ],
+      "canonical_trace_statuses": {
+        "uncertain": 28,
+        "reachable": 26,
+        "unreachable": 1
+      },
+      "lost_hunt_tp_ids": [
+        "pygoat-001",
+        "pygoat-002",
+        "pygoat-007",
+        "pygoat-008",
+        "pygoat-010",
+        "pygoat-012",
+        "pygoat-013",
+        "pygoat-016",
+        "pygoat-019",
+        "pygoat-022",
+        "pygoat-023",
+        "pygoat-032",
+        "pygoat-035",
+        "pygoat-036",
+        "pygoat-056"
+      ],
+      "v_wall_s": 66,
+      "v_metadata_missing": false,
+      "pi_recorded_thinking_levels": [
+        "low"
+      ],
+      "pi_tool_calls": {
+        "bash": 4,
+        "read": 4,
+        "write": 1,
+        "edit": 1
+      }
+    }
+  ],
+  "confirmed_all_fewer_fp_slugs_per_trial": {
+    "1": 0,
+    "2": 0,
+    "3": 0
+  },
+  "input_sha256": {
+    "/home/user/g/Real-Vuln-Benchmark/ground-truth/realvuln-vampi/ground-truth.json": "9dd52ceebff72a7cbb027051e5d17433efa9cf40bee6889e824839606dba3bab",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-hunt/run-1.json": "098d5c6057219d772a1822ee37c60e3757382ca76add3f65ecee3f79c4d97186",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-final/run-1.json": "6c6f04679570738bfa0cf870d53133f96efd17faa4ad90c2cdde7de61f01a02c",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/pi-glm53/run-1.json": "a2728af58c1548f2f50332312126b6621d800308cd7cd65d1bef0ee485b7c393",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-final/run-1.metrics.json": "8d111a8c7ee9798acbcf3205f16d6aea1f0bacc9d2e186709c559f9678007fc9",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/b8389c35.json": "9a6f98081c6744f1b64d686053c6eeca7172bedc5954032f90cab353a68ad219",
+    "/home/user/g/codesec/bench/realvuln-runs/b8389c35/codesec.log": "9c57f57f8a65765c57437fed9540d300308e96bc1e56e5575ccddf3067e4f796",
+    "/home/user/g/codesec/bench/realvuln-runs/b8389c35/state.db": "e2d2dbad543a6f21468fc30fda160af4e996a36dc6c304292d0eae952ce67bc9",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/pi-glm53/run-1.metrics.json": "24cb31f80d5c687d27765abe4214d4e89663bd8fa1164b831f4154e75647b3f1",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-hunt/run-2.json": "27e02ae94c6d4620a727b3e9853207b14914b67d3668d4fc37abd748acbf4e08",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-final/run-2.json": "e3f0bf86bc8004329e7ce1c8e525acccae21fec007502791ca4094bfdb5908c5",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/pi-glm53/run-2.json": "3751cb85622f88f0828e671ca13f13da16ceab66b513f2493a464d06a8189e4e",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-final/run-2.metrics.json": "9f9503c3b05d12f61c51fa297fdffb6fdc38c0c1a1355b442a174cf040976ac4",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/c3a4b17e.json": "3e0374be26faf63f7e10ab96bc9253a3be40eeeaf13b019cb7077a221cdd1a0d",
+    "/home/user/g/codesec/bench/realvuln-runs/c3a4b17e/codesec.log": "123237a8cffa2644e36a834c169b1dc16692715b5fa2b9e29b6ac0404a4f9637",
+    "/home/user/g/codesec/bench/realvuln-runs/c3a4b17e/state.db": "e12f9f7c2cde46bd11e7dc52d01a4ad8e27108bcd8689ccd74df140e90e24056",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/pi-glm53/run-2.metrics.json": "93a8b7b7a7848f4554d285b709457dd4a5c8bd93570e07f44b7313d458743bb3",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-hunt/run-3.json": "30534f889067fe0fd3dea9d6894784f904e881b65232875e1ce6ce73e504fc0c",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-final/run-3.json": "95d53eb435e1419917f83e64dd2724a36e238f6364c348a254a849983cb0b082",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/pi-glm53/run-3.json": "b1fe2560356adef244a6f4a14c449afb0aad60c05b8d4d2a6affb0a1db9287c6",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/codesec-glm53-final/run-3.metrics.json": "c228f7abc7f29ffa18ef50b506258f10655b7bf8bc2cae803da00cd15063b880",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/7cbb68c3.json": "ec27344676e87417febf30fec1298f34f4ffe6d88bbcb92250cafcc655e735e9",
+    "/home/user/g/codesec/bench/realvuln-runs/7cbb68c3/codesec.log": "f28f40ab4ba1f126a2f779996491931a196d0abfcaaedc60e8ec3ce86ca251c3",
+    "/home/user/g/codesec/bench/realvuln-runs/7cbb68c3/state.db": "b3f901c577bbb6bb1dbec328238d32d814963ad3586f373f94ded1bf125151f3",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-vampi/pi-glm53/run-3.metrics.json": "1137de2cae9b969c530218a34a6e0bcf38420601cb8f6579148bb950fbc6548a",
+    "/home/user/g/Real-Vuln-Benchmark/ground-truth/realvuln-damn-vulnerable-flask-application/ground-truth.json": "c084f59ceb6de8173d30515ebb64a0d6a3364072e14c5495c9ed985d2e3c36d2",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-hunt/run-1.json": "29a9324e59eaadfa02b520ff813a28f68d6b7aea10f2389571ba5a61855fbe0c",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-final/run-1.json": "ee0fe5f226e9c8834e40910bdeaf793dd4762e5667abc0b759db8ebcad2b4c67",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/pi-glm53/run-1.json": "760e24aab1cc86452593cf488d30604dfe8dcfa7327550fa2c090a3da86e671e",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-final/run-1.metrics.json": "7fd96be61935523d0d4701c372ded0961b085f203c3216bb2a56ca3d6c2cf869",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/68ced559.json": "541faf9dc2808426493bbade80b3e81892b4d36206c78f8a22812eeb8d91d654",
+    "/home/user/g/codesec/bench/realvuln-runs/68ced559/codesec.log": "cabe9fe4b74ecb94cf39b6f710046bdda68136505daeccc6dbd95e9aa1d39809",
+    "/home/user/g/codesec/bench/realvuln-runs/68ced559/state.db": "cea9503f9e89e922f964a7228263783e7bede72753c749aeea389a2de88f8179",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/pi-glm53/run-1.metrics.json": "def7d0b3f2d6e9170bc5674ec2fd8252bd2d328cdb3b8c151a3d512233d03790",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-hunt/run-2.json": "0f991532f0006d89be79f1025bc47a2e7b5c5fa98e47387029cfa46c552598ef",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-final/run-2.json": "30d14775a63bb10bcebe7bea7d75bb0cfe88fe52d3bfddcc976b1249349cc27f",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/pi-glm53/run-2.json": "2ebe7be5342a6c3b15c7f95177456cde1ac71a48b7ab5609feb05bde4cb16932",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-final/run-2.metrics.json": "a1bee205f7c2bbb897ee7df7239b85bac82a60f388e19170c73045c2ab9f8ac1",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/bae45718.json": "69b5f83e8bb1f05e0a30b6d2c4dd2ba239e50d424b50cd4476354313ac6b034f",
+    "/home/user/g/codesec/bench/realvuln-runs/bae45718/codesec.log": "4189d587f18121a36c8664bb09b9a40340b373e77886d8833c21fcbf0503e29d",
+    "/home/user/g/codesec/bench/realvuln-runs/bae45718/state.db": "0372782816682599a2208b4ef2420e84025c7d3d5a22b72c5397cce7962f8ce5",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/pi-glm53/run-2.metrics.json": "58e06c08ddcace7a63eb7c0d2de292d4bbccf62cf0943a164541b0eab601b540",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-hunt/run-3.json": "ef6dc00d1ff9ebd4f8495c708dbbedfed4b82c31ef2da0589d4545134c5588dc",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-final/run-3.json": "8f73b683d162b4a392d223c8f06b3ad37339a385cfdd2fe56c6f8f697fccf927",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/pi-glm53/run-3.json": "58bf75e05ddc61e218b1670f381f22cc7df3b5fc9e1e3d90dc4bb38bb5e27706",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/codesec-glm53-final/run-3.metrics.json": "f0f732007f3709ce796ccacf12ab304d9a5c67f5713eb00d3ece442b4b1d9f67",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/e9613330.json": "cb6cec4e010de87d2d65fc6a5b9a1a8a1316c96a249ba27b4e317361e1732a51",
+    "/home/user/g/codesec/bench/realvuln-runs/e9613330/codesec.log": "7257754e9d0eea3fe70d1af1d1132a3c0693f8e70b04e7b4043b84aebfbfd142",
+    "/home/user/g/codesec/bench/realvuln-runs/e9613330/state.db": "6a529d417ef495258f88c732431689fd558eaae47a5c3f4df13e37374ddfe9cd",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-damn-vulnerable-flask-application/pi-glm53/run-3.metrics.json": "9d8d76e5fd8eac344b562d3dc57130ba5883c106815acd69ae36ab2199277a4d",
+    "/home/user/g/Real-Vuln-Benchmark/ground-truth/realvuln-python-insecure-app/ground-truth.json": "489babdf2ae210214530ea0f294f940c91dd9babac25c3c9ec7d3a61327becb3",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-hunt/run-1.json": "e4a51d704ffe9ee89189293ac70b6952e9ee3e2431cba6e65ce26bd958ab16ab",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-final/run-1.json": "765640298bc470ae01e8081abf92bc4e91c6a70b30fba67065b941230e4e802c",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/pi-glm53/run-1.json": "17805dccb5d37fefea50539027c7ce2f1f0d8183dd9f50c368a0a5fd08db7a0f",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-final/run-1.metrics.json": "068de0d527af62b77442277abbeba4491863b801fde7bd449d48f09c3520f1fc",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/fa0d72a6.json": "0df62a7fc15167579240d2bef2eda73aade475106c1ad226b096a03fdaa453cd",
+    "/home/user/g/codesec/bench/realvuln-runs/fa0d72a6/codesec.log": "4770d2041dc9ebde61230ff18696b67c237f68fbf201dbfce26b8ef6535caafa",
+    "/home/user/g/codesec/bench/realvuln-runs/fa0d72a6/state.db": "edfd4d7792a89b6ebf58d5950658a87c1f1cbcd7af688c77280fbfc126451566",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/pi-glm53/run-1.metrics.json": "9e8d880649e5f6214349d1710069b80f5d0cf23a52b2eccf5e860b774eea7bf3",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-hunt/run-2.json": "da73609ac2098ca039ad4dc15511f89583cd3f216ebac013108fc5a7e6924a84",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-final/run-2.json": "d03f7e9aaae8f21c0ba9af0f4e31aadab88ead34fc4c2e26dae7d486fb6781ff",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/pi-glm53/run-2.json": "cec91f9c90aba01a00ae42f013d52007ce763a0fb51f809e2045a809c7bc7a99",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-final/run-2.metrics.json": "6daddbdbb419edf1c954332e461880dc4090d22c41098758570d64e79138540b",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/f8437736.json": "a4a198a21f957f28828507fea7d8ae7c5be95910b8aaac1f02b5637be272696f",
+    "/home/user/g/codesec/bench/realvuln-runs/f8437736/codesec.log": "6be1775e6b51d6c05c09f07405f12fea034d82e3a734d064782ea30eded1dbd0",
+    "/home/user/g/codesec/bench/realvuln-runs/f8437736/state.db": "638f157151452f3d81f3932dc74fae5f38a9cd5ebe680330d02b0227325d3658",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/pi-glm53/run-2.metrics.json": "18a01ccd02dc3643d3e3bd992ac10470b9bcccdcad6013799a8ab06ea1c218f4",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-hunt/run-3.json": "1803b2bc9f514b4c8ef62b946d2371e28af7d32640f52e3365504f0d73913bad",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-final/run-3.json": "8ea93fdfb8adf3cde224bb237c02e8e2cdd06458c42d828bfdbd5ed26389841a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/pi-glm53/run-3.json": "e8acd8993c45927b3ce398e6aed8a9ce8e9b04e1bab4bc8c7736572043003ea5",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/codesec-glm53-final/run-3.metrics.json": "83c66e2c1c8bdaed2b8232ef698a952de7b2eca38dfdfdc9b5d9f51feb70df3f",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/f0aa21fe.json": "2c81b04773f98f6aac4dbe2090736252ffe725ae39e38962a8e8f815600d3182",
+    "/home/user/g/codesec/bench/realvuln-runs/f0aa21fe/codesec.log": "03f82dd09f6a8fa7acc9af0af144130d5e5a481dc6033465a49d4901ee2f946a",
+    "/home/user/g/codesec/bench/realvuln-runs/f0aa21fe/state.db": "b27e30178a0a5ba719afb3e8eb0ebd8646c3d3dec2a209147b081cfc1c6749e0",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-python-insecure-app/pi-glm53/run-3.metrics.json": "4723d5fddb0da3ec6cfe374391660f4fed184877794cde70078f79fe33a709ff",
+    "/home/user/g/Real-Vuln-Benchmark/ground-truth/realvuln-dvpwa/ground-truth.json": "1a948c47ce0c264f030c2423cd1fd25d5e5e227cf848454c74ed9cb0cf86b13a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-hunt/run-1.json": "685aa5c5bfc285b557ff3e72edca34b06a336bbb0814c00492925fc7f72eae72",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-final/run-1.json": "cd6d244d453b21b097e5bc7b38234fde57b8371f85f9e4262283677e521904ac",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/pi-glm53/run-1.json": "dfb5f17b532d9dab4111640c5f3dac0c22d8f2e04faf0a9b8468d5fd4306eb29",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-final/run-1.metrics.json": "3f94cda8ae59391b5e121ade7f93b584bd936f9a872fbc5f962b2eb8a02b5580",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/55daafbb.json": "1e8ea8e12345fc033fa7ad258796e0308d318ac04714187edf38de261688a9a3",
+    "/home/user/g/codesec/bench/realvuln-runs/55daafbb/codesec.log": "02c9d42b225d8c690a24af946c605cb468a9692627f93b431426b3b5ca36c71c",
+    "/home/user/g/codesec/bench/realvuln-runs/55daafbb/state.db": "05203736150184cd4b1825d3e782367d49e91ce86ed1ee18a3f77c018e8d48b2",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/pi-glm53/run-1.metrics.json": "ac35c889d8ad3c3e0924fab121a9ce3172fcb032e73e752cfc6dce77e5c72276",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-hunt/run-2.json": "e2c2c2c357a9d61702c799e7883c3455d7efcbb551ea260056479949f54ffded",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-final/run-2.json": "24b20ce32fa1db82cec0c8acad0cdd38cc1cfee5dc7b3032c68d963d2efab41f",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/pi-glm53/run-2.json": "3b87bb896950851fb3bb962d4e0f8f9f153cb19477348d42199a8966ad38a81f",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-final/run-2.metrics.json": "1063012c32cc1d8007fd6db036cecefe80fd3258fcf8f9c05fb929ccca0749e6",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/1c54849b.json": "edeaac81327242bf6d82a9f9c89e51ac8c27f03c825f09ac382893af3b2ad4ba",
+    "/home/user/g/codesec/bench/realvuln-runs/1c54849b/codesec.log": "a35388528ea1fa4def4de31120fc208be93e4ff289c679b3aff549887ae6013e",
+    "/home/user/g/codesec/bench/realvuln-runs/1c54849b/state.db": "81479f489e725c7d9545ed088003985efd541a459cc3b8baa3acb676f0dc6d57",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/pi-glm53/run-2.metrics.json": "cb7c5be06c567bceed94526f853ae83fbbb51592fead7a1065f1c1f2439a982a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-hunt/run-3.json": "cd7457bfb7fee478ea26cf383134cee79348c527e248ee46ae2fc27a3d705bee",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-final/run-3.json": "bae295e64fa1aeaddef3f814329d14c6207801901dfc512b40963cf2ab097836",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/pi-glm53/run-3.json": "c7906054e6caa03ec01fc6bb09396856e188504c04088439e88814ec0dc1e624",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/codesec-glm53-final/run-3.metrics.json": "55f8d9211af2a69ccd8881702c4da94cbe4dddc23e0558b92ce53d6a198acf22",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/58eec561.json": "f4083116092254fc1d1dadd2d91f6f787f3cdc0ba5f188b7e9f3b8ebbc841d06",
+    "/home/user/g/codesec/bench/realvuln-runs/58eec561/codesec.log": "04b30a23d2b62333710c23136dc5a64fe5d3de171f63ee556c19657f8b6e028a",
+    "/home/user/g/codesec/bench/realvuln-runs/58eec561/state.db": "19edf24108d8208d911ae7683063c4d318a88a95890060b29aff9ddf9533dea8",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-dvpwa/pi-glm53/run-3.metrics.json": "9537b655d6999304b263867c84cb3e9aa64f7a1ec14012de8bf90362120149f6",
+    "/home/user/g/Real-Vuln-Benchmark/ground-truth/realvuln-lets-be-bad-guys/ground-truth.json": "9e6c2e3763d4b72006719edf6961f24a2483a12ef26bb56eb37dd52b30921a56",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-hunt/run-1.json": "dd6133b0d92846eb33fe37e38b77eb62f649295a849bae1f0b051c0224d4528d",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-final/run-1.json": "d238fc05a9b968d8c219b6830694d4e6b43df716d182f3e011ecaccaf4ac42d1",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/pi-glm53/run-1.json": "1b80d4419655e92ea0b284b12735a56a5215ad15f3ab3cf62db3ed3c31e0bb6d",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-final/run-1.metrics.json": "1064c4fe9b666994128ee1be94e9aec08752686e335d364e6560ff2fafc76533",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/342029a3.json": "1fe7f43807b2e9c3673277b08102041e1aedd2f69f42a036ef33b37b66b0e852",
+    "/home/user/g/codesec/bench/realvuln-runs/342029a3/codesec.log": "590fa11eccf964f8a95ce322dac91da9e384238eed75b686377f8f667ef10f6e",
+    "/home/user/g/codesec/bench/realvuln-runs/342029a3/state.db": "ea08b053b80c1bf3137a2bb690e7ce237bcc70eb0ddee689952a834e1a9e4781",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/pi-glm53/run-1.metrics.json": "a38412b0cc6e7f9262db322c62340f76deca55a1a43d03c593f200f1943ee5ba",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-hunt/run-2.json": "9aa5d71ddfef99c2f118a7136f756ad2ba53885987903fcea179d0c6d4076615",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-final/run-2.json": "59b2b57477a8737b79f4b710ca4f7c2ff179fecc32df19e3d9ac314ee5fdfd57",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/pi-glm53/run-2.json": "76ecac510ce1389547a1bb89c61fd49f54163a43b226d1477a2fccab42e6c889",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-final/run-2.metrics.json": "209014d73f3105989278c3369005c44a7e5ab08fb3c4aab7fb05021d1eee04dd",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/96174186.json": "b5dd4af059de8e406f2fcbee9a5087dbed994e699b75703eb5f23618c8c45e1f",
+    "/home/user/g/codesec/bench/realvuln-runs/96174186/codesec.log": "e41b9a2a581dbc181f99c39ace352eb4d8d7ac3d98aee0f34a5ac2c9601644ae",
+    "/home/user/g/codesec/bench/realvuln-runs/96174186/state.db": "9ab81c021941fceb0b306f6b6f94456e69990cfbc77e05a79a5b76b77138c191",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/pi-glm53/run-2.metrics.json": "28a3650d849888de455008276a4919ef15254f7dbc0137eca918b890d93d370a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-hunt/run-3.json": "cb775ef470ae06b0daaa1c922fda17076a65120b4822d07c71f06c6e0628c7e0",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-final/run-3.json": "2bc5dd371bcff450e8a4b610b8002c45919f804d39ba4faddb708486379cb345",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/pi-glm53/run-3.json": "9ee351600c6d838f8bb34d60a13e027fae8b88d52159d3a2cb8a6fa6252dfa22",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/codesec-glm53-final/run-3.metrics.json": "5fd934cbc77a7e6b2c17c7f2c617b9e294c03749d5ea47a125adc0e552bc87f9",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/979665fa.json": "a05d66ffd43d87c9e8dd82d4e8be78efdcd147e8e67bc1ddf69fbd3016ed9d69",
+    "/home/user/g/codesec/bench/realvuln-runs/979665fa/codesec.log": "cd89ad17da759d3d0961170870336529cdf7e047c145c6b27032757d93e75947",
+    "/home/user/g/codesec/bench/realvuln-runs/979665fa/state.db": "297984bc4ceed85d8209d76ff5e96107ba5a92d4868c525c59516486c240db7c",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-lets-be-bad-guys/pi-glm53/run-3.metrics.json": "fcbf03cf8dca22461ca70464cb42defa52f735f17e57eca326f4ecfa0d7a6996",
+    "/home/user/g/Real-Vuln-Benchmark/ground-truth/realvuln-pygoat/ground-truth.json": "b8291f099388a61c06ba7ce360fe8e806c2f4284699ac5771d8ec7ec1be6cb16",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-hunt/run-1.json": "c29425d6dc704e033323bf2edd98667c793d54a54ce923de37564bc63f78810a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-final/run-1.json": "33ae3564791ec9ff4cd6dce2ae0cfebfe4dbf3192efd388b7f19c7404b3219d5",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/pi-glm53/run-1.json": "94a9d9eb8e4aa86ea2b4bd09bed378a24f1f5df00d71bc1a6eed31d688e28d1a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-final/run-1.metrics.json": "3e8abd2e9c49320d70edef124d22536b366a89b52c13e6653391ae797814464e",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/23038dab.json": "670c0a49c608660e5f3707594631a42cc4c8306649cd39345f53bcef2c0f7aec",
+    "/home/user/g/codesec/bench/realvuln-runs/23038dab/codesec.log": "fe077a50e402a9941b8f770eca793d8205338811a26c6c90ca2941fc7b742434",
+    "/home/user/g/codesec/bench/realvuln-runs/23038dab/state.db": "ca91fbc139d863734138a88c70f9993ccf7c33a209b47afea212955c58cb31fa",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/pi-glm53/run-1.metrics.json": "b902df9d1f0b24384a83a2284e479280aef0b19c89d8f29a008762d5c001902b",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-hunt/run-2.json": "7bfe757b33ada017bedd1da20c7c34566c1e99869ccb69b2d4eabcb5748e320d",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-final/run-2.json": "0869d5144f5140ee1931a1e01ebc28fb75823b177d578f73bffc11f1a7d88792",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/pi-glm53/run-2.json": "36d5dc16f68cd49bb46a68e1f2613d3da6851c0818419f0448cb1a58affc2db2",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-final/run-2.metrics.json": "0816ee7c029b62023edc6a335ac83bdfe4a89b6513c4b9001434c0a38327b753",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/0d748f45.json": "9f73bd4a36b81d3f748ae878002e8a34dea491ff63b836e8453e476d4c332889",
+    "/home/user/g/codesec/bench/realvuln-runs/0d748f45/codesec.log": "a384b0a68ef01584a0fa3661dbbacb8ef6781d2d13cbe0f7a3ce0db3babcee01",
+    "/home/user/g/codesec/bench/realvuln-runs/0d748f45/state.db": "696b64649d64bab8520663d7c2085ccb8b4ee768882ef9c18230bc2c5fc77766",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/pi-glm53/run-2.metrics.json": "7971c3fffc2447748b1eb5e762274d7883bc5ca828cd10f90e8f62ace9c414ee",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-hunt/run-3.json": "9b4ea31a0cd7ce2a3e8d9cc7861494221c12acf6984e6f61506201b03675c441",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-final/run-3.json": "a7be8fd10e5bf9f779fcbd9be44a5000b6f7458acb05832388bdf3715859afa5",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/pi-glm53/run-3.json": "bfa76172870743742f9bc81462d0a6491df7d5cd565486657aa8f97fa322ef0a",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/codesec-glm53-final/run-3.metrics.json": "9d57ae4c404c421d26016a6aa6ea104db95ca11d3c0690f15e018a715788165c",
+    "/home/user/g/codesec/bench/realvuln-runs/operator/3e5fd985.json": "eba1e121ca8c4edf708a91bf1fff64d98945c481ab6682cf73165230c5628a84",
+    "/home/user/g/codesec/bench/realvuln-runs/3e5fd985/codesec.log": "b715eeadc271432d94b0aa30d9bc823b0d8cb6b9462140b38cc1938ea224b3e3",
+    "/home/user/g/codesec/bench/realvuln-runs/3e5fd985/state.db": "d8c810d55a65b10350adef5d6309cc880ba97686da592a0043d87cb4aca6b52f",
+    "/home/user/g/Real-Vuln-Benchmark/scan-results/realvuln-pygoat/pi-glm53/run-3.metrics.json": "1c0a6c4156fa8d729ca5d157fa4199a448813f6ee3e352d49fbd0f92d14f52e7"
+  }
+}

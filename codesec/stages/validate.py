@@ -29,7 +29,7 @@ from codesec.contracts import StageContractError, validate_validation_output
 from codesec.hints import hints_for, load_hints
 from codesec.runner import AgentResult, AgentRunError, TransientAgentError, run_agent
 from codesec.state import Finding, StateDB, Task
-from codesec.stages._common import StageContext
+from codesec.stages._common import StageContext, record_input_size
 
 log = logging.getLogger(__name__)
 
@@ -174,6 +174,9 @@ async def run_validate(ctx: StageContext, db: StateDB) -> int:
 
     async def _review(prompt_name: str, artifact_name: str,
                       user_input: dict) -> AgentResult:
+        record_input_size(
+            db, ctx.run_id, "validate", artifact_name, user_input
+        )
         return await run_agent(
             stage="validate",
             prompt_file=ctx.prompt(prompt_name),
@@ -189,6 +192,7 @@ async def run_validate(ctx: StageContext, db: StateDB) -> int:
             artifact_dir=ctx.results_dir("validate"),
             artifact_name=artifact_name,
             repair_attempts=sc.repair_attempts,
+            deadline=ctx.deadline,
         )
 
     def _base_input(f: Finding, *, projected: bool) -> dict:

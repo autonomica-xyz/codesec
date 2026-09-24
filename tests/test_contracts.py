@@ -4,6 +4,7 @@ import pytest
 
 from codesec.contracts import (
     StageContractError,
+    filter_hunt_findings,
     validate_dedupe_partition,
     validate_hunt_output,
     filter_task_batch,
@@ -315,3 +316,80 @@ def test_hunt_output_non_list_optional_bucket_becomes_empty(tmp_path) -> None:
 
     assert payload["hardening"] == []
     assert payload["uncovered"] == []
+
+
+def test_filter_hunt_findings_drops_only_invalid_findings(tmp_path) -> None:
+    (tmp_path / "a.py").write_text("one\ntwo\nthree\n")
+    (tmp_path / "b.py").write_text("x\n")
+    payload = {
+        "task_id": "t_1",
+        "findings": [
+            {
+                "finding_id": "f_ok",
+                "file": "a.py",
+                "line_start": 1,
+                "line_end": 3,
+                "evidence_snippet": "one",
+            },
+            {   # range 2-5 in a 3-line file → dropped, task survives
+                "finding_id": "f_bad_range",
+                "file": "a.py",
+                "line_start": 2,
+                "line_end": 5,
+                "evidence_snippet": "two",
+            },
+            {   # invented path → dropped
+                "finding_id": "f_missing",
+                "file": "nope.py",
+                "line_start": 1,
+                "line_end": 1,
+                "evidence_snippet": "x",
+            },
+            {   # outside repo → dropped
+                "finding_id": "f_outside",
+                "file": "../a.py",
+                "line_start": 1,
+                "line_end": 1,
+                "evidence_snippet": "x",
+            },
+            {   # empty evidence → dropped
+                "finding_id": "f_empty",
+                "file": "b.py",
+                "line_start": 1,
+                "line_end": 1,
+                "evidence_snippet": "  ",
+            },
+            {   # duplicate of f_ok → dropped
+                "finding_id": "f_ok",
+                "file": "b.py",
+                "line_start": 1,
+                "line_end": 1,
+                "evidence_snippet": "x",
+            },
+            {   # reserved ID → dropped
+                "finding_id": "f_old",
+                "file": "b.py",
+                "line_start": 1,
+                "line_end": 1,
+                "evidence_snippet": "x",
+            },
+        ],
+    }
+
+    kept, dropped = filter_hunt_findings(
+        "t_1", payload, tmp_path, reserved_finding_ids={"f_old"}
+    )
+
+    assert [f["finding_id"] for f in kept] == ["f_ok"]
+    dropped_ids = [d["finding_id"] for d in dropped]
+    assert dropped_ids == [
+        "f_bad_range", "f_missing", "f_outside", "f_empty", "f_ok", "f_old"
+    ]
+    assert all(d["reason"] for d in dropped)
+
+
+def test_filter_hunt_findings_still_raises_on_task_id_mismatch(tmp_path) -> None:
+    payload = {"task_id": "other", "findings": []}
+
+    with pytest.raises(StageContractError, match="task_id"):
+        filter_hunt_findings("t_1", payload, tmp_path)

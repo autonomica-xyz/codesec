@@ -32,18 +32,20 @@ verdict for the finding: `confirmed`, `rejected`, or `needs_more_info`.
   "tally": "RC",
   "repo_path": "/abs/path",
   "scope_notes": "<optional verbatim text — operator-defined exclusions>",
-  "live_target": { ... optional ... }
+  "evidence_mode": "static",
+  "live_target": null,
+  "markers": null
 }
 ```
 
 If `scope_notes` places this finding's attack class or code region out
-of scope, reject with `rationale` citing the scope rule. If
-`live_target` is present you may use it as the Validate stage does.
+of scope, reject with `rationale` citing the scope rule. This is a
+**static, source-only** review (`live_target` is null): judge on source
+evidence and isolated local reasoning only.
 
 # Tools available
 
-Read, Grep, Glob. Pure-analysis mode — no Bash (unless `live_target`
-is present, same rules as Validate).
+Read, Grep, Glob. Pure-analysis mode — no Bash, no network.
 
 # Output
 
@@ -77,12 +79,15 @@ hunter's claimed severity anchor yours:
 1. **Enumerate `missing_preconditions` first.** Collect every
    precondition the panel reviews surfaced — plus any you find — that
    must hold for the bug to fire: authentication, a non-default config
-   flag, a specific deployment, a caller that must opt in. Only then
-   assign `arbiter_severity`.
+   flag, a specific deployment, a caller that must opt in. External
+   reachability is Trace's job, not yours: if no external entry point
+   is in evidence, count it as a missing precondition rather than
+   assuming one. Only then assign `arbiter_severity`.
 2. Map the count:
-   - **0 missing preconditions** and an unauthenticated external entry
-     → `high` (`critical` only when a successful PoC or a trace backs
-     the demonstrated impact).
+   - **0 missing preconditions** (the unsafe operation needs nothing
+     beyond an external request that is in evidence) → `high`
+     (`critical` only when source-level proof or a trace backs the
+     demonstrated impact).
    - **1–2 missing preconditions**, or an authenticated-only entry →
      `medium`.
    - **3+ missing preconditions**, or a local-only/config-file-only

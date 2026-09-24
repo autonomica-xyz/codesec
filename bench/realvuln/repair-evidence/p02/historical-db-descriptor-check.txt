@@ -1,0 +1,6 @@
+saved DBs with confirmed findings: 21
+smallest: n=1 run=51d23c56
+largest:  n=55 run=3e5fd985
+small: 1 confirmed -> 1 batches; max batch chars=1468 <= cap=30000: True; every id assigned exactly once: True
+large: 55 confirmed -> 3 batches; max batch chars=29925 <= cap=30000: True; every id assigned exactly once: True
+historical DBs untouched (copies under tempfile.TemporaryDirectory)

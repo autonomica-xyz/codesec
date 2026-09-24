@@ -12,6 +12,7 @@ from codesec.runner import AgentRunError, TransientAgentError, run_agent
 from codesec.state import StateDB, Task
 from codesec.stages._common import (
     StageContext,
+    record_input_size,
     refuted_patterns_digest,
     truncated_recon_summary,
 )
@@ -231,6 +232,7 @@ async def run_gapfill(ctx: StageContext, db: StateDB,
         "max_new_tasks": max_new_tasks,
         **ctx.extras(),
     }
+    record_input_size(db, ctx.run_id, "gapfill", None, user_input)
     try:
         result = await run_agent(
             stage="gapfill",
@@ -247,6 +249,7 @@ async def run_gapfill(ctx: StageContext, db: StateDB,
             artifact_dir=ctx.results_dir("gapfill"),
             artifact_name=f"gapfill_{_iter_tag(ctx.run_id, db)}",
             repair_attempts=sc.repair_attempts,
+            deadline=ctx.deadline,
         )
     except (AgentRunError, TransientAgentError) as e:
         log.warning("[%s] gapfill failed: %s", ctx.run_id, e)

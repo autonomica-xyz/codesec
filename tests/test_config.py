@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from codesec.config import load_config
+import pytest
+
+from codesec.config import HarnessConfig, load_config
 
 
 def test_default_config_loads() -> None:
@@ -134,3 +136,32 @@ def test_duo_config_pins_both_gguf_hashes() -> None:
         assert profile.expected_sha256
         assert len(profile.expected_sha256) == 64
         int(profile.expected_sha256, 16)
+
+
+# ---- P02: explicit report policy / renderer settings ----
+
+def test_report_policy_and_renderer_defaults_preserved(tmp_path):
+    cfg = load_config(None)
+    assert cfg.report_policy == "confirmed_all"
+    assert cfg.report_renderer == "agent"
+
+
+def test_report_policy_and_renderer_loaded_from_yaml(tmp_path):
+    path = tmp_path / "stages.yaml"
+    path.write_text(
+        "defaults: {}\n"
+        "stages:\n"
+        "  recon:\n    model: m\n    concurrency: 1\n    tools: []\n"
+        "report_policy: confirmed_reachable\n"
+        "report_renderer: deterministic\n"
+    )
+    cfg = load_config(path)
+    assert cfg.report_policy == "confirmed_reachable"
+    assert cfg.report_renderer == "deterministic"
+
+
+def test_unknown_report_policy_rejected(tmp_path):
+    with pytest.raises(ValueError, match="unknown report_policy"):
+        HarnessConfig(report_policy="whatever_scores_best")
+    with pytest.raises(ValueError, match="unknown report_renderer"):
+        HarnessConfig(report_renderer="silent")

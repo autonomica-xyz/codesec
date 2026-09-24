@@ -1,0 +1,94 @@
+# Frozen experiment configuration for the repaired GLM-5.3 regression (P03+).
+#
+# Effective settings per section 1 of PLAN-REALVULN-REPAIR-AND-RETEST.md:
+#   endpoint   https://api.z.ai/api/coding/paas/v4 (via the P03 gateway)
+#   model      glm-5.3 on EVERY request
+#   reasoning  thinking.type=enabled + reasoning_effort=low (never "off")
+#   sampling   temperature 0.6, no top_p, max_tokens 32768/request
+#   context    262144 client ceiling (server support verified in calibration)
+#   renderer   deterministic report; policy confirmed_reachable (primary)
+#
+# This file is the codesec-side source of truth; its canonical hash (not the
+# path) goes into the experiment manifest. The reasoning protocol is
+# explicit: zai_thinking — the llama chat-template kwarg is never sent.
+defaults:
+  max_turns: 25
+  permission_mode: acceptEdits
+  repair_attempts: 1
+
+report_policy: confirmed_reachable
+report_renderer: deterministic
+
+model_profiles:
+  glm53-hosted:
+    engine: local
+    endpoint: http://gateway:8800/v1      # operator gateway via docker-network alias (P03/P06)
+    model: glm-5.3
+    api_key_env: ZAI_GATEWAY_KEY        # dummy key; credential is gateway-side
+    temperature: 0.6
+    max_output_tokens: 32768
+    max_input_chars: 50000
+    context_limit: 262144
+    reasoning_protocol: zai_thinking
+    reasoning_enabled: true
+    reasoning_effort: low
+    reasoning_history: preserve
+
+stages:
+  recon:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 1
+    tools: [Read, Grep, Glob, Bash]
+    max_turns: 60
+    repair_attempts: 2
+  hunt:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 4
+    tools: [Read, Grep, Glob, Bash]
+    hints_in_hunt: true
+    policies: false
+  validate:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 4
+    tools: [Read, Grep, Glob]
+    rounds: 2
+    panel_projection: true
+    hints_all_rounds: false
+  gapfill:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 1
+    tools: [Read, Grep, Glob]
+    repair_attempts: 2
+    negative_knowledge: true
+  dedupe:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 1
+    tools: [Read]
+  trace:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 4
+    tools: [Read, Grep, Glob, Bash]
+    canary_markers: true
+    require_canary_marker: true
+  feedback:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 1
+    tools: [Read, Grep, Glob]
+    repair_attempts: 2
+  report:
+    profile: glm53-hosted
+    model: glm-5.3
+    concurrency: 1
+    tools: [Read]
+    grade: false
+
+loops:
+  gapfill_iterations: 2
+  feedback_iterations: 1

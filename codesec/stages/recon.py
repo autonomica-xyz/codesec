@@ -7,7 +7,7 @@ import logging
 from codesec.contracts import filter_task_batch
 from codesec.runner import run_agent
 from codesec.state import StateDB
-from codesec.stages._common import StageContext
+from codesec.stages._common import StageContext, record_input_size
 
 log = logging.getLogger(__name__)
 
@@ -48,11 +48,13 @@ async def run_recon(ctx: StageContext, db: StateDB, max_tasks: int = DEFAULT_MAX
     sc = ctx.stage("recon")
     log.info("[%s] recon: model=%s max_tasks=%d", ctx.run_id, sc.model, max_tasks)
 
+    recon_input = {"repo_path": str(ctx.repo_path), "max_tasks": max_tasks,
+                   **ctx.extras()}
+    record_input_size(db, ctx.run_id, "recon", None, recon_input)
     result = await run_agent(
         stage="recon",
         prompt_file=ctx.prompt("01-recon"),
-        user_input={"repo_path": str(ctx.repo_path), "max_tasks": max_tasks,
-                    **ctx.extras()},
+        user_input=recon_input,
         schema_file=ctx.schema("recon_output"),
         allowed_tools=sc.tools,
         model=sc.model,
@@ -64,6 +66,7 @@ async def run_recon(ctx: StageContext, db: StateDB, max_tasks: int = DEFAULT_MAX
         artifact_dir=ctx.results_dir("recon"),
         artifact_name="recon",
         repair_attempts=sc.repair_attempts,
+        deadline=ctx.deadline,
     )
 
     payload = result.payload

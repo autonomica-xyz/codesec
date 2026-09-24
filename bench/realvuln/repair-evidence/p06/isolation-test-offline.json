@@ -1,0 +1,88 @@
+{
+  "ran_at": 1790095333.6694133,
+  "checks": [
+    {
+      "name": "host_home_absent",
+      "passed": true,
+      "exit_code": 1,
+      "observed": "cat: /home/user/.bashrc: No such file or directory\ncat: /root/.bashrc: Permission denied"
+    },
+    {
+      "name": "operator_map_absent",
+      "passed": true,
+      "exit_code": 1,
+      "observed": "cat: /work/operator/map.json: No such file or directory"
+    },
+    {
+      "name": "gt_labels_absent",
+      "passed": true,
+      "exit_code": 1,
+      "observed": "cat: /work/ground-truth.json: No such file or directory"
+    },
+    {
+      "name": "prior_runs_absent",
+      "passed": true,
+      "exit_code": 2,
+      "observed": "ls: cannot access '/work/realvuln-runs': No such file or directory"
+    },
+    {
+      "name": "codesec_checkout_absent",
+      "passed": true,
+      "exit_code": 2,
+      "observed": "ls: cannot access '/home/user/g/codesec/bench': No such file or directory"
+    },
+    {
+      "name": "docker_socket_absent",
+      "passed": true,
+      "exit_code": 2,
+      "observed": "ls: cannot access '/var/run/docker.sock': No such file or directory"
+    },
+    {
+      "name": "sudo_absent",
+      "passed": true,
+      "exit_code": 1,
+      "observed": ""
+    },
+    {
+      "name": "host_pid_hidden",
+      "passed": true,
+      "observed": "container_pid_namespace"
+    },
+    {
+      "name": "host_root_via_proc_absent",
+      "passed": true,
+      "observed": "container_root_only"
+    },
+    {
+      "name": "egress_blocked",
+      "passed": true,
+      "observed": "000EGRESS_BLOCKED"
+    },
+    {
+      "name": "target_readonly",
+      "passed": true,
+      "observed": "WRITE_BLOCKED\nbash: line 1: /work/target/.write-probe: Read-only file system"
+    },
+    {
+      "name": "rootfs_readonly",
+      "passed": true,
+      "observed": "WRITE_BLOCKED\nbash: line 1: /usr/.write-probe: Read-only file system"
+    },
+    {
+      "name": "read_target",
+      "passed": true,
+      "observed": "def f(q):"
+    },
+    {
+      "name": "write_scratch",
+      "passed": true,
+      "observed": "ok"
+    },
+    {
+      "name": "write_output",
+      "passed": true,
+      "observed": "ok"
+    }
+  ],
+  "passed": true
+}

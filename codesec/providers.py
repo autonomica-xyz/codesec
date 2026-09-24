@@ -59,6 +59,9 @@ class Provider:
     # entry is always the bare gateway token so a pre-set ANTHROPIC_AUTH_TOKEN
     # still works.
     key_env_vars: tuple[str, ...]
+    # OpenAI-compatible chat-completions root used by `--engine local`.
+    # Empty means "same as base_url" (Unsloth) or unused (Anthropic SDK).
+    openai_base_url: str = ""
 
 
 PROVIDERS: dict[str, Provider] = {
@@ -85,6 +88,9 @@ PROVIDERS: dict[str, Provider] = {
         sonnet_role_model="glm-4.7",
         haiku_role_model="glm-4.5-air",
         key_env_vars=("ZAI_API_KEY", "CODESEC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
+        # Pi / OpenAI-compat tools use the Coding Plan paas endpoint, not
+        # the Anthropic Messages URL. `--engine local` talks to this.
+        openai_base_url="https://api.z.ai/api/coding/paas/v4",
     ),
     "unsloth": Provider(
         name="unsloth",
@@ -95,6 +101,7 @@ PROVIDERS: dict[str, Provider] = {
         sonnet_role_model=None,
         haiku_role_model=None,
         key_env_vars=("UNSLOTH_API_KEY", "CODESEC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
+        openai_base_url="http://localhost:8888/v1",
     ),
 }
 
@@ -110,6 +117,22 @@ def get_provider(name: str) -> Provider:
         raise ProviderError(
             f"Unknown provider {name!r}. Known: {provider_names()}"
         ) from None
+
+
+def resolve_key(provider: Provider, explicit: str | None = None) -> str | None:
+    return _resolve_key(provider, explicit)
+
+
+def local_base_url(provider: Provider, explicit: str | None = None) -> str:
+    """Base URL for `--engine local` (OpenAI chat completions)."""
+    if explicit:
+        return explicit.rstrip("/")
+    override = os.environ.get("CODESEC_BASE_URL", "").strip()
+    if override:
+        return override.rstrip("/")
+    if provider.openai_base_url:
+        return provider.openai_base_url.rstrip("/")
+    return (provider.base_url or "http://localhost:8080").rstrip("/")
 
 
 def _resolve_key(provider: Provider, explicit: str | None) -> str | None:

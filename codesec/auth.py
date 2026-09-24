@@ -77,6 +77,26 @@ class AuthError(RuntimeError):
 CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 
 
+def find_claude_cli() -> str | None:
+    """Locate Claude Code CLI the same way the Agent SDK does.
+
+    PATH ``claude`` is optional: ``claude-agent-sdk`` ships a bundled
+    binary under ``_bundled/claude``. Requiring PATH-only blocked Z.AI /
+    gateway runs on machines that never installed Claude Code globally.
+    """
+    on_path = shutil.which("claude")
+    if on_path:
+        return on_path
+    try:
+        import claude_agent_sdk
+        bundled = Path(claude_agent_sdk.__file__).resolve().parent / "_bundled" / "claude"
+        if bundled.is_file() and os.access(bundled, os.X_OK):
+            return str(bundled)
+    except Exception:
+        pass
+    return None
+
+
 def _is_gateway_base(url: str) -> bool:
     """A non-empty BASE_URL that doesn't point at canonical Anthropic
     counts as 'gateway mode'."""
@@ -118,17 +138,12 @@ def configure_auth(
     else:
         load_dotenv()
 
-    cli_path = shutil.which("claude")
-    if cli_path is None:
-        raise AuthError(
-            "`claude` CLI not found on PATH. Install Claude Code first: "
-            "https://code.claude.com/docs/en/setup"
-        )
-
     # Provider preset front-end: populate the gateway env vars before the
     # generic mode selection runs, so a non-anthropic provider just flows
     # through the existing gateway branch. (codesec.providers applies the
     # base URL + a resolved API key and scrubs ANTHROPIC_API_KEY.)
+    # Do this *before* the CLI probe so a missing ZAI_API_KEY is the
+    # error you see, not a red herring about `claude` on PATH.
     provider_active = False
     if provider != "anthropic":
         from codesec.providers import ProviderError, apply_provider_env, get_provider
@@ -140,6 +155,21 @@ def configure_auth(
             provider_active = bool(info.get("applied"))
         except ProviderError as e:
             raise AuthError(str(e)) from None
+
+    # Z.AI / Unsloth / any preset gateway does not use Claude Code.
+    # Only the default Anthropic SDK path needs a `claude` binary.
+    cli_path = None
+    if not provider_active:
+        cli_path = find_claude_cli()
+        if cli_path is None:
+            raise AuthError(
+                "`claude` CLI not found (not on PATH, and no bundled binary in "
+                "claude-agent-sdk). Install Claude Code "
+                "(https://code.claude.com/docs/en/setup) or reinstall "
+                "`claude-agent-sdk` with its bundled CLI. "
+                "Z.AI / Unsloth do not need Claude: "
+                "`codesec auth-check --provider zai`."
+            )
 
     api_key_was_set = "ANTHROPIC_API_KEY" in os.environ
     base_url = os.environ.get("ANTHROPIC_BASE_URL", "")
@@ -212,14 +242,15 @@ def configure_auth(
             )
 
     cli_version: str | None = None
-    try:
-        out = subprocess.run(
-            [cli_path, "--version"], capture_output=True, text=True, timeout=10
-        )
-        if out.returncode == 0:
-            cli_version = out.stdout.strip()
-    except (subprocess.SubprocessError, OSError):
-        pass
+    if cli_path:
+        try:
+            out = subprocess.run(
+                [cli_path, "--version"], capture_output=True, text=True, timeout=10
+            )
+            if out.returncode == 0:
+                cli_version = out.stdout.strip()
+        except (subprocess.SubprocessError, OSError):
+            pass
 
     return AuthStatus(
         auth_mode=mode,

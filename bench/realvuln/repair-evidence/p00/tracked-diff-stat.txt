@@ -1,0 +1,16 @@
+ .gitignore                              |   1 +
+ codesec/auth.py                         |  61 +++++--
+ codesec/cli.py                          |  44 +++--
+ codesec/local_agent.py                  |  74 ++++++++-
+ codesec/providers.py                    |  23 +++
+ codesec/stages/report.py                | 273 ++++++++++++++++++++++----------
+ codesec/state.py                        |  27 ++--
+ prompts/08-report.md                    |  23 +--
+ schemas/report.schema.json              |   6 +-
+ tests/test_auth.py                      |  13 +-
+ tests/test_local_agent.py               |  10 ++
+ tests/test_local_engine_recon_repair.py |  16 ++
+ tests/test_providers.py                 |  21 +++
+ tests/test_report_stage.py              | 150 ++++++++++++++++++
+ tests/test_state.py                     |  89 ++++++++++-
+ 15 files changed, 675 insertions(+), 156 deletions(-)

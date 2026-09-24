@@ -9,6 +9,7 @@ work/
 results/
 runs/
 runlogs/
+bench/realvuln-runs/
 *.out
 *.log
 *.pid

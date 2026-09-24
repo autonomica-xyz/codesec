@@ -136,6 +136,9 @@ def auth_check(provider: str, provider_api_key: str | None,
         console.print(f"[green]OK[/green] {label}")
     if status.provider != "anthropic":
         console.print(f"          provider={status.provider}")
+        from codesec.providers import get_provider, local_base_url
+        console.print(f"          openai_base={local_base_url(get_provider(status.provider))}")
+        console.print("          engine=local (no Claude CLI)")
     if status.gateway_model:
         console.print(f"          ANTHROPIC_MODEL={status.gateway_model}")
     if status.api_key_scrubbed:
@@ -144,7 +147,8 @@ def auth_check(provider: str, provider_api_key: str | None,
     if status.auth_token_scrubbed:
         console.print("[yellow]scrubbed[/yellow] ANTHROPIC_AUTH_TOKEN removed from env "
                       "(no gateway base URL set — leaving it would outrank subscription)")
-    console.print(f"claude CLI: {status.claude_cli_path} ({status.claude_cli_version})")
+    if status.claude_cli_path:
+        console.print(f"claude CLI: {status.claude_cli_path} ({status.claude_cli_version})")
 
 
 @main.command("unsloth-proxy")
@@ -243,13 +247,10 @@ def providers() -> None:
               envvar="CODESEC_LLAMA_SERVER", show_default=True,
               help="llama.cpp server binary used by --runtime managed.")
 @_provider_options
-@click.option("--engine", type=click.Choice(["sdk", "local"]), default="sdk",
-              show_default=True,
-              help="Agent engine. 'sdk' = Claude Code Agent SDK (default). "
-                   "'local' = direct OpenAI-compatible client to a llama-server "
-                   "/v1/chat/completions endpoint (run-qwopus.sh / Unsloth) — "
-                   "no subprocess, no claude login, KV-cache-friendly multi-turn. "
-                   "Use with --base-url / --model.")
+@click.option("--engine", type=click.Choice(["sdk", "local"]), default=None,
+              help="Agent engine. Default: local (OpenAI chat completions, no "
+                   "Claude CLI) for --provider zai/unsloth; sdk (Claude Code) "
+                   "for anthropic. Pass --engine sdk to force Claude Code.")
 @click.option("--allow-api-key", is_flag=True, default=False,
               help="Honor ANTHROPIC_API_KEY for metered Anthropic billing "
                    "(also via CODESEC_ALLOW_API_KEY=1).")
@@ -262,7 +263,7 @@ def run(repo: str, run_id: str | None, resume: bool, max_cost_usd: float | None,
         runtime_mode: str | None, llama_server: str,
         provider: str, provider_api_key: str | None,
         provider_base_url: str | None, model: str | None,
-        engine: str, allow_api_key: bool) -> None:
+        engine: str | None, allow_api_key: bool) -> None:
     """Run the full 8-stage pipeline against a target repo."""
     from codesec import runner
 
@@ -276,6 +277,9 @@ def run(repo: str, run_id: str | None, resume: bool, max_cost_usd: float | None,
         stage.profile is not None for stage in config.stages.values()
     )
 
+    if engine is None:
+        engine = "local" if provider in {"zai", "unsloth"} else "sdk"
+
     if profile_routed:
         if model:
             raise click.UsageError(
@@ -285,13 +289,17 @@ def run(repo: str, run_id: str | None, resume: bool, max_cost_usd: float | None,
             "[cyan]engine:[/cyan] request-scoped local model profiles"
         )
     elif engine == "local":
-        # Direct local-LLM path: skip Claude Code auth entirely. Point at a
-        # llama-server /v1/chat/completions endpoint (run-qwopus.sh :8080,
-        # Unsloth :8888, etc.). Resolve base URL + key the same way providers do.
-        base = (provider_base_url or os.environ.get("CODESEC_BASE_URL")
-                or os.environ.get("ANTHROPIC_BASE_URL") or "http://localhost:8080")
-        key = (provider_api_key or os.environ.get("CODESEC_API_KEY")
-               or os.environ.get("UNSLOTH_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+        # Direct OpenAI-compat path: skip Claude Code entirely.
+        from codesec.providers import get_provider, local_base_url, resolve_key
+        prov = get_provider(provider)
+        base = local_base_url(prov, provider_base_url)
+        key = resolve_key(prov, provider_api_key)
+        if provider != "anthropic" and not key:
+            console.print(
+                f"[red]auth error:[/red] No API key for provider {provider!r}. "
+                f"Set one of {list(prov.key_env_vars)} or pass --api-key."
+            )
+            sys.exit(2)
         if not model:
             console.print("[red]--engine local requires --model[/red] "
                           "(the model id / GGUF alias the server reports)")
@@ -490,6 +498,8 @@ def _show_run_detail(db: StateDB, run_id: str) -> None:
     confirmed = [f for f in findings if f.validation_status == "confirmed"]
     canonical = [f for f in confirmed if f.is_canonical]
     reachable = db.get_reachable_canonical_findings(run_id)
+    reportable = db.get_report_findings(run_id)
+    untraced = sum(1 for _f, tr in reportable if tr is None)
 
     t = Table(title=f"run {run_id}", show_lines=False)
     t.add_column("metric"); t.add_column("count")
@@ -501,6 +511,8 @@ def _show_run_detail(db: StateDB, run_id: str) -> None:
     t.add_row("findings (confirmed)", str(len(confirmed)))
     t.add_row("findings (canonical)", str(len(canonical)))
     t.add_row("findings (reachable)", str(len(reachable)))
+    t.add_row("findings (report)", str(len(reportable)))
+    t.add_row("findings (untraced)", str(untraced))
     t.add_row("total cost ($)", f"{db.total_cost(run_id):.4f}")
     console.print(t)
 

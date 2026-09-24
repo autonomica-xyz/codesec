@@ -89,6 +89,22 @@ def test_validate_accepts_near_valid_recon():
     assert errs == []
 
 
+def test_normalize_wraps_bare_subsystem_array():
+    raw = [
+        {
+            "name": "app_entrypoint",
+            "path": "app.py",
+            "language": "python",
+            "purpose": "Flask entrypoint",
+            "external_dependencies": ["flask"],
+        }
+    ]
+    norm = _normalize_stage_payload(raw, RECON_SCHEMA)
+    assert validate_schema(norm, RECON_SCHEMA) == []
+    assert norm["subsystems"][0]["name"] == "app_entrypoint"
+    assert norm["initial_tasks"]
+
+
 def test_hunt_pure_task_echo_normalizes_to_empty_findings():
     """Model re-emits input task fields instead of HuntOutput — must not fail schema."""
     schema = ROOT / "schemas" / "finding.schema.json"

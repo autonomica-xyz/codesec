@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS dedupe_groups (
     root_cause TEXT NOT NULL,
     canonical_finding_id TEXT NOT NULL,
     canonical_override TEXT,
+    superseded_at REAL,
     raw_json TEXT NOT NULL,
     PRIMARY KEY (run_id, group_id),
     FOREIGN KEY (run_id) REFERENCES runs(run_id)
@@ -165,6 +166,16 @@ CREATE TABLE IF NOT EXISTS artifacts (
     path TEXT NOT NULL,
     created_at REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS stage_events (
+    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    event TEXT NOT NULL,
+    created_at REAL NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_stage_events_run ON stage_events(run_id, stage);
 
 CREATE INDEX IF NOT EXISTS idx_tasks_run_status ON tasks(run_id, status);
 CREATE INDEX IF NOT EXISTS idx_findings_run ON findings(run_id);
@@ -423,6 +434,7 @@ class StateDB:
             ],
             "dedupe_groups": [
                 ("canonical_override", "TEXT"),
+                ("superseded_at", "REAL"),
             ],
         }
         for table, columns in additions.items():
@@ -513,31 +525,14 @@ class StateDB:
 
         for row in self._conn.execute(
             """
-            SELECT f.finding_id
-            FROM findings AS f
-            LEFT JOIN traces AS t
-              ON t.run_id = f.run_id AND t.finding_id = f.finding_id
-            WHERE f.run_id = ?
-              AND f.validation_status = 'confirmed'
-              AND f.is_canonical = 1
-              AND t.finding_id IS NULL
-            ORDER BY f.finding_id
-            """,
-            (run_id,),
-        ):
-            gaps.append(
-                f"canonical finding {row['finding_id']} has no terminal trace"
-            )
-
-        for row in self._conn.execute(
-            """
             SELECT g.group_id
             FROM dedupe_groups AS g
             LEFT JOIN findings AS f
               ON f.run_id = g.run_id
              AND f.group_id = g.group_id
              AND f.is_canonical = 1
-            WHERE g.run_id = ? AND f.finding_id IS NULL
+            WHERE g.run_id = ? AND g.superseded_at IS NULL
+              AND f.finding_id IS NULL
             ORDER BY g.group_id
             """,
             (run_id,),
@@ -1023,7 +1018,134 @@ class StateDB:
                 out.append((f, tr))
         return out
 
+    def get_report_findings(
+        self, run_id: str, policy: str = "confirmed_all"
+    ) -> list[tuple[Finding, dict | None]]:
+        """Authoritative report membership, defined once for every consumer.
+
+        Policies (see codesec.config.REPORT_POLICIES):
+        - confirmed_all: every confirmed canonical finding (historical default).
+        - confirmed_reachable: confirmed canonical AND a valid reachable trace.
+        - confirmed_except_unreachable: confirmed canonical except traces the
+          engine marked explicitly unreachable.
+        Trace may be missing (untraced) — only "confirmed_reachable" demands it.
+        """
+        out: list[tuple[Finding, dict | None]] = []
+        for f in self.get_findings(
+            run_id, validation_status="confirmed", canonical_only=True
+        ):
+            trace = self.get_trace(run_id, f.finding_id)
+            status = self.trace_status(trace)
+            if policy == "confirmed_all":
+                keep = True
+            elif policy == "confirmed_reachable":
+                keep = status == "reachable"
+            elif policy == "confirmed_except_unreachable":
+                keep = status != "unreachable"
+            else:
+                raise ValueError(f"unknown report policy {policy!r}")
+            if keep:
+                out.append((f, trace))
+        return out
+
+    @staticmethod
+    def trace_status(trace: dict | None) -> str:
+        """Normalized trace state: reachable/unreachable/uncertain/untraced."""
+        if not isinstance(trace, dict):
+            return "untraced"
+        status = trace.get("status")
+        if status in {"reachable", "unreachable", "uncertain", "untraced"}:
+            return status
+        if trace.get("reachable") is True:
+            return "reachable"
+        if trace.get("reachable") is False:
+            return "unreachable"
+        return "uncertain"
+
+    def report_membership_snapshot(self, run_id: str) -> dict:
+        """Membership truth for summary counts and exports (single source).
+
+        Emits every evidence tier separately so no tier disappears from the
+        review record regardless of the selected primary policy.
+        """
+        by_status: dict[str, list[str]] = {
+            "reachable": [],
+            "uncertain": [],
+            "unreachable": [],
+            "untraced": [],
+        }
+        canonical: list[str] = []
+        for f in self.get_findings(
+            run_id, validation_status="confirmed", canonical_only=True
+        ):
+            canonical.append(f.finding_id)
+            by_status[self.trace_status(self.get_trace(run_id, f.finding_id))].append(
+                f.finding_id
+            )
+        return {
+            "confirmed_canonical_ids": sorted(canonical),
+            "confirmed_reachable_ids": sorted(by_status["reachable"]),
+            "confirmed_except_unreachable_ids": sorted(
+                fid
+                for status in ("reachable", "uncertain", "untraced")
+                for fid in by_status[status]
+            ),
+            "by_trace_status": {k: sorted(v) for k, v in by_status.items()},
+        }
+
+    # ---------- stage events ----------
+
+    def record_stage_event(
+        self, run_id: str, stage: str, event: dict
+    ) -> None:
+        """Append a structured stage-health/degradation/telemetry event."""
+        self._conn.execute(
+            "INSERT INTO stage_events (run_id, stage, event, created_at) "
+            "VALUES (?, ?, ?, ?)",
+            (run_id, stage, json.dumps(event, ensure_ascii=False), time.time()),
+        )
+        self._conn.commit()
+
+    def get_stage_events(
+        self, run_id: str, stage: str | None = None
+    ) -> list[dict]:
+        if stage is None:
+            rows = self._conn.execute(
+                "SELECT stage, event, created_at FROM stage_events "
+                "WHERE run_id = ? ORDER BY event_id",
+                (run_id,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT stage, event, created_at FROM stage_events "
+                "WHERE run_id = ? AND stage = ? ORDER BY event_id",
+                (run_id, stage),
+            ).fetchall()
+        return [
+            {
+                "stage": row["stage"],
+                "created_at": row["created_at"],
+                **json.loads(row["event"]),
+            }
+            for row in rows
+        ]
+
     # ---------- dedupe ----------
+
+    def supersede_dedupe_groups(self, run_id: str) -> int:
+        """Retire the current dedupe generation before a new one applies.
+
+        Multi-pass dedupe (feedback iterations, resume) regroups the whole
+        confirmed set; prior group rows stay as immutable history — marked
+        superseded rather than deleted — so the coverage check never sees
+        an "active" group with no canonical member."""
+        cur = self._conn.execute(
+            "UPDATE dedupe_groups SET superseded_at = ? "
+            "WHERE run_id = ? AND superseded_at IS NULL",
+            (time.time(), run_id),
+        )
+        self._conn.commit()
+        return cur.rowcount
 
     def add_dedupe_group(self, run_id: str, group: dict) -> None:
         existing = self._conn.execute(
@@ -1033,6 +1155,15 @@ class StateDB:
         ).fetchone()
         if existing is not None:
             if json.loads(existing["raw_json"]) == group:
+                # Idempotent re-apply of the same generation (resume): the
+                # row may have been superseded by an aborted later pass —
+                # reactivate it as current.
+                self._conn.execute(
+                    "UPDATE dedupe_groups SET superseded_at = NULL "
+                    "WHERE run_id = ? AND group_id = ?",
+                    (run_id, group["group_id"]),
+                )
+                self._conn.commit()
                 return
             raise StateConflictError(
                 f"group {group['group_id']!r} conflicts with its existing "

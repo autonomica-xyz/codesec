@@ -8,6 +8,7 @@ from codesec.runner import AgentRunError, TransientAgentError, run_agent
 from codesec.state import StateDB
 from codesec.stages._common import (
     StageContext,
+    record_input_size,
     refuted_patterns_digest,
     truncated_recon_summary,
 )
@@ -28,17 +29,19 @@ async def run_feedback(ctx: StageContext, db: StateDB,
     recon_summary = db.get_recon_output(ctx.run_id) or {}
     payload = [{"finding": f.raw_json, "trace": tr} for f, tr in reachable]
 
+    feedback_input = {
+        "reachable_traces": payload,
+        "recon_summary": truncated_recon_summary(recon_summary),
+        "refuted_patterns": refuted_patterns_digest(db, ctx.run_id),
+        "max_new_tasks": max_new_tasks,
+        **ctx.extras(),
+    }
+    record_input_size(db, ctx.run_id, "feedback", None, feedback_input)
     try:
         result = await run_agent(
             stage="feedback",
             prompt_file=ctx.prompt("07-feedback"),
-            user_input={
-                "reachable_traces": payload,
-                "recon_summary": truncated_recon_summary(recon_summary),
-                "refuted_patterns": refuted_patterns_digest(db, ctx.run_id),
-                "max_new_tasks": max_new_tasks,
-                **ctx.extras(),
-            },
+            user_input=feedback_input,
             schema_file=ctx.schema("feedback_output"),
             allowed_tools=sc.tools,
             model=sc.model,
@@ -50,6 +53,7 @@ async def run_feedback(ctx: StageContext, db: StateDB,
             artifact_dir=ctx.results_dir("feedback"),
             artifact_name="feedback",
             repair_attempts=sc.repair_attempts,
+            deadline=ctx.deadline,
         )
     except (AgentRunError, TransientAgentError) as e:
         log.warning("[%s] feedback failed: %s", ctx.run_id, e)

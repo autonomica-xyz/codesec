@@ -22,18 +22,17 @@ A JSON object:
   "repo_path": "/abs/path/to/target",
   "max_tasks": 80,
   "scope_notes": "<optional verbatim text — when present, lists target-specific exclusions or context>",
-  "live_target": {
-    "url": "http://server.local:8888",
-    "credentials": {"email": "...", "password": "..."}
-  }
+  "evidence_mode": "static",
+  "live_target": null,
+  "markers": null
 }
 ```
 
-`scope_notes` and `live_target` are **optional**. If present, treat
-`scope_notes` as authoritative additional rules. If `live_target` is
-provided, the downstream Hunt agents will be able to send actual
-requests at this URL — bias your task queue toward attack classes that
-benefit from runtime confirmation.
+This is a **static, source-only** run: `live_target` is null — there is
+no deployed instance, no URL, and no runtime credentials. Do not invent
+or assume a deployment, and do not bias tasks toward classes that need
+runtime confirmation. `scope_notes`, when present, is authoritative
+additional rules.
 
 The repo is mounted at `repo_path` and you can read it with Read, Grep,
 Glob, and Bash (use Bash only for read-only inspection: `git log --oneline

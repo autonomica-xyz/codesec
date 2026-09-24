@@ -136,13 +136,15 @@ async def test_request_profile_overrides_process_global_local_routing(
         max_input_chars=40_000,
     )
 
+    # load_config derives a profile-routed stage's model from the profile,
+    # so a correctly routed call passes the SAME model id.
     await runner.run_agent(
         stage="hunt",
         prompt_file=tmp_path / "prompt.md",
         user_input={},
         schema_file=tmp_path / "schema.json",
         allowed_tools=[],
-        model="legacy-model",
+        model="titus-model",
         profile=profile,
         cwd=tmp_path,
         artifact_dir=tmp_path,
@@ -155,3 +157,39 @@ async def test_request_profile_overrides_process_global_local_routing(
     assert captured["temperature"] == 0.1
     assert captured["max_tokens"] == 2048
     assert captured["max_input_chars"] == 40_000
+    assert captured["reasoning"] == {
+        "protocol": "none", "enabled": False, "effort": None,
+        "history": "preserve",
+    }
+
+
+async def test_request_profile_model_conflict_is_caught(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """P03: a stage label naming one model while an attached profile would
+    silently send another must fail loudly (audit: wrong-profile requests)."""
+
+    def fake_local_agent(**kwargs):  # pragma: no cover - must not be reached
+        raise AssertionError("conflicting request must not reach the wire")
+
+    monkeypatch.setattr(local_agent, "run_local_agent", fake_local_agent)
+    profile = ModelProfile(
+        name="titus",
+        engine="local",
+        endpoint="http://127.0.0.1:9090",
+        model="titus-model",
+    )
+
+    with pytest.raises(ValueError, match="model conflict for stage 'hunt'"):
+        await runner.run_agent(
+            stage="hunt",
+            prompt_file=tmp_path / "prompt.md",
+            user_input={},
+            schema_file=tmp_path / "schema.json",
+            allowed_tools=[],
+            model="glm-5.3",          # --model changed the stage label...
+            profile=profile,          # ...but the profile would send titus-model
+            cwd=tmp_path,
+            artifact_dir=tmp_path,
+            artifact_name="t_1",
+        )

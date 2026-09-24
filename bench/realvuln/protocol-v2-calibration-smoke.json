@@ -1,0 +1,138 @@
+{
+ "protocol_version": 2,
+ "cohort": "calibration",
+ "repos": [
+  "realvuln-intentionally-vulnerable-python-application"
+ ],
+ "seed": 20260922,
+ "benchmark_pin": "7a710251f55c17d32d3adcb13d37468e2e3b9e4a",
+ "realvuln_root": "/home/user/g/Real-Vuln-Benchmark",
+ "settings": {
+  "gateway_url": "http://gateway:8800/v1",
+  "endpoint": "https://api.z.ai/api/coding/paas/v4",
+  "model": "glm-5.3",
+  "reasoning": {
+   "protocol": "zai_thinking",
+   "enabled": true,
+   "effort": "low",
+   "history": "preserve"
+  },
+  "temperature": 0.6,
+  "top_p": null,
+  "max_output_tokens_per_request": 32768,
+  "client_context_ceiling": 262144,
+  "h_concurrency": 4,
+  "v_concurrency": 1,
+  "recon_tasks": {
+   "default": 10
+  },
+  "gapfill_iterations": 2,
+  "feedback_iterations": 1,
+  "wall_ceiling_s": 3600,
+  "wall_ceiling_overrides_s": {
+   "realvuln-pygoat": 10800
+  },
+  "synthesis_reserve_fraction": 0.2,
+  "final_snapshot_reserve_s": 30,
+  "memory_off_fresh_process": true,
+  "pi_model_id": "zaihosted/glm-5.3",
+  "pi_model_definition": {
+   "$comment": "Isolated Pi provider/model definition for the repaired GLM-5.3 experiment (P03/P10). Copied into PI_CODING_AGENT_DIR/models.json for the V arm; baseUrl is replaced with the gateway's actual listen address at deploy time. compat overrides replicate the z.ai request format through the gateway (Pi 0.85.1: thinkingFormat zai sends thinking:{type:enabled,clear_thinking:false}; supportsReasoningEffort adds reasoning_effort; maxTokensField max_tokens). samplingParams pins temperature 0.6 with NO top_p. maxTokens 32768 matches the frozen per-request output cap; contextWindow 262144 is the client ceiling.",
+   "providers": {
+    "zaihosted": {
+     "baseUrl": "http://gateway:8800/v1",
+     "api": "openai-completions",
+     "apiKey": "gateway",
+     "models": [
+      {
+       "id": "glm-5.3",
+       "name": "GLM-5.3 (hosted, via gateway)",
+       "reasoning": true,
+       "input": [
+        "text"
+       ],
+       "contextWindow": 262144,
+       "maxTokens": 32768,
+       "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+       },
+       "samplingParams": {
+        "temperature": 0.6
+       },
+       "compat": {
+        "thinkingFormat": "zai",
+        "supportsReasoningEffort": true,
+        "maxTokensField": "max_tokens",
+        "supportsUsageInStreaming": true
+       }
+      }
+     ]
+    }
+   }
+  }
+ },
+ "effective_request": {
+  "model": "glm-5.3",
+  "reasoning": {
+   "protocol": "zai_thinking",
+   "enabled": true,
+   "effort": "low",
+   "history": "preserve"
+  },
+  "request_params": {
+   "thinking": {
+    "type": "enabled"
+   },
+   "reasoning_effort": "low"
+  },
+  "temperature": 0.6,
+  "max_tokens": 32768,
+  "context_limit": 262144,
+  "stream": true,
+  "fingerprint_sha256": "cf9d42d2da75e9ebdefebe30e58b9a33eb2711e2f9d916ec8dfada8e35d59adf"
+ },
+ "report": {
+  "policy": "confirmed_reachable",
+  "renderer": "deterministic",
+  "secondary": [
+   "confirmed_all",
+   "confirmed_except_unreachable"
+  ]
+ },
+ "budgets": {
+  "regression_matrix_wall_hours_upper_bound": 78,
+  "cleanup_grace_s_per_cell": 30,
+  "calibration_wall_hours_upper_bound": 14
+ },
+ "primary_metric": "official matcher strict micro F3 within each trial, mean over three trials",
+ "thresholds": {
+  "positive_rule": "(F3_H >= F3_V + 5 OR (R_H >= R_V - 0.05 AND P_H >= P_V + 0.10)) AND fewer H FPs on >=4/6 repos in >=2/3 trials (strictly fewer; ties never count)",
+  "precedence": "invalid/incomplete first, then positive rule, then does-not-meet"
+ },
+ "secondary_analyses": [
+  "complete-pair diagnostic (never primary)",
+  "famous/obscure splits",
+  "per-CWE/severity recall",
+  "FP taxonomy (decoy/duplicate/unmatched)",
+  "report-policy ablations separated from the decision",
+  "greedy-matcher order sensitivity (fixed seed, labeled secondary)"
+ ],
+ "failure_scoring": {
+  "output_failure_after_inference": "empty predictions, all scored positives FN, decoys TN; never labeled agent-authored",
+  "setup_failure_zero_inference": "experiment incomplete; headline blocked",
+  "protocol_breach": "comparison invalidated; headline blocked"
+ },
+ "image": {
+  "tag": "codesec-iso",
+  "image_id": "sha256:98f6b85e8acb172ba33543f318e59df3517d98030c717b74f430b03ac0abc4c3",
+  "pi_version": "0.85.1",
+  "built_at": 1790098647.0131302
+ },
+ "isolation_evidence_sha256": "a8c34f9c1ffb32769f452494de9991ab9414e87c31b8746ff07bd953d59a7ddd",
+ "trials": [
+  1
+ ]
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Report",
-  "description": "Final structured report — only reachable, deduped findings.",
+  "description": "Final structured report — confirmed canonical findings. Trace is annotation (reachable / unreachable / uncertain / untraced), not a membership filter.",
   "type": "object",
   "required": ["run_id", "target", "summary", "findings"],
   "additionalProperties": false,
@@ -57,6 +57,10 @@
             "required": ["entry_points", "call_chain"],
             "additionalProperties": false,
             "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["reachable", "unreachable", "uncertain", "untraced"]
+              },
               "entry_points": {
                 "type": "array",
                 "items": {

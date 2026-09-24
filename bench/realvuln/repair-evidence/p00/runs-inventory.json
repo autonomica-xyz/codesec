@@ -1,0 +1,3161 @@
+{
+ "created": "2026-09-22T15:02:30Z",
+ "note": "read-only inventory; DBs hashed in place; no live WAL observed; orphan devserver from 0d748f45 stopped before inventory",
+ "runs": [
+  {
+   "id": "0092b797",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790012266.5300531,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/0092b797/target",
+    "run_id": "0092b797",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "7b7bc5dc32ea3dcdeba30d9d5c9bb88603154b17f3f97b82a41b158ced476acb"
+  },
+  {
+   "id": "00f1905e",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "00f1905e",
+    "slug": "realvuln-pygoat",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "42",
+    "timeout_s": "5400",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "02727845",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "02727845",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "34",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "056470c1",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "056470c1",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "19",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "0d748f45",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789860090.684872,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/0d748f45/target",
+    "run_id": "0d748f45",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "0d748f45",
+    "slug": "realvuln-pygoat",
+    "trial": "2",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "12651",
+    "recon": "40",
+    "max_hours": "3",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 38,
+    "findings": 47,
+    "traces": 42,
+    "dedupe_groups": 42,
+    "uncovered_surfaces": 54,
+    "hardening_notes": 47,
+    "prior_exclusions": 0,
+    "costs": 220,
+    "sqlite_sequence": 2,
+    "artifacts": 257
+   },
+   "db_sha256": "696b64649d64bab8520663d7c2085ccb8b4ee768882ef9c18230bc2c5fc77766"
+  },
+  {
+   "id": "12e1d5f7",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "12e1d5f7",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "407",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "14163045",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790006382.2643206,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/14163045/target",
+    "run_id": "14163045",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "14163045",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "1",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "3582",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "provider": "unsloth",
+    "scanner_tag": "unsloth-qwen38-q4",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 6,
+    "findings": 2,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 2,
+    "prior_exclusions": 0,
+    "costs": 2,
+    "sqlite_sequence": 2,
+    "artifacts": 4
+   },
+   "db_sha256": "d5758f7c24d16aeff9d646856cfce1c20d0bc2383ef32708b757f0cb822172aa"
+  },
+  {
+   "id": "180ef911",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "180ef911",
+    "slug": "realvuln-vampi",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "32",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "19652a7d",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "19652a7d",
+    "slug": "realvuln-dvpwa",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "13",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "1994b397",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790002519.7141023,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/1994b397/target",
+    "run_id": "1994b397",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "69d5450523801334ccd3ecf20e42c0904fb13beebfe2e453504c38b34104ca6b"
+  },
+  {
+   "id": "1abd0265",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "1abd0265",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "15",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "1b57993a",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790034875.036045,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/1b57993a/target",
+    "run_id": "1b57993a",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "6850bffee3fbd5ef882739cb1a6dc766a25e671effa68069c6cb7caa30ddc3d5"
+  },
+  {
+   "id": "1c54849b",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789829054.0194082,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/1c54849b/target",
+    "run_id": "1c54849b",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "1c54849b",
+    "slug": "realvuln-dvpwa",
+    "trial": "2",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "4417",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 10,
+    "findings": 15,
+    "traces": 14,
+    "dedupe_groups": 14,
+    "uncovered_surfaces": 35,
+    "hardening_notes": 23,
+    "prior_exclusions": 0,
+    "costs": 69,
+    "sqlite_sequence": 2,
+    "artifacts": 78
+   },
+   "db_sha256": "81479f489e725c7d9545ed088003985efd541a459cc3b8baa3acb676f0dc6d57"
+  },
+  {
+   "id": "213a68be",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "213a68be",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "131",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "22fadd34",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790043687.6591265,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/22fadd34/target",
+    "run_id": "22fadd34",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "f7788fca0c7e7262c57ece155c9d009d25cffe5388ad3729619217d20fd47e96"
+  },
+  {
+   "id": "23038dab",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789854526.53102,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/23038dab/target",
+    "run_id": "23038dab",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "23038dab",
+    "slug": "realvuln-pygoat",
+    "trial": "1",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "5520",
+    "recon": "40",
+    "max_hours": "3",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 7,
+    "findings": 22,
+    "traces": 20,
+    "dedupe_groups": 20,
+    "uncovered_surfaces": 17,
+    "hardening_notes": 16,
+    "prior_exclusions": 0,
+    "costs": 94,
+    "sqlite_sequence": 2,
+    "artifacts": 101
+   },
+   "db_sha256": "ca91fbc139d863734138a88c70f9993ccf7c33a209b47afea212955c58cb31fa"
+  },
+  {
+   "id": "24ac2be6",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789773650.437874,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/24ac2be6/target",
+    "run_id": "24ac2be6",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "0c708d6eb3851b71d39d2b302b35a61ef69ad99744a29b43ddbed78c647f99e8"
+  },
+  {
+   "id": "25d2d212",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790003104.1223514,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/25d2d212/target",
+    "run_id": "25d2d212",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "233e30ab77dcf2e3a79a631a4c6b7ed5576fc9ac0328e727d0465bf50c34d2bb"
+  },
+  {
+   "id": "26f2c416",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "26f2c416",
+    "slug": "realvuln-intentionally-vulnerable-python-application",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "15",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "292b64d8",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "292b64d8",
+    "slug": "realvuln-dvpwa",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "272",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "2ca94e0c",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "2ca94e0c",
+    "slug": "realvuln-pygoat",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "1875",
+    "timeout_s": "5400",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "2cc14e3d",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789998407.2315028,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/2cc14e3d/target",
+    "run_id": "2cc14e3d",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "420da1b59797c0ccb1b5fc290cfd272c518d895c94adbdd78c0850e519177493"
+  },
+  {
+   "id": "2db1045d",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789998640.782949,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/2db1045d/target",
+    "run_id": "2db1045d",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "809c3b874de5ca7ebac4f694ef95c29b8abe0776e8d9c251f06b8503530afd95"
+  },
+  {
+   "id": "2ec008a4",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "2ec008a4",
+    "slug": "realvuln-vampi",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "25",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "33f677bf",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "33f677bf",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "224",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "342029a3",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789838867.0896025,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/342029a3/target",
+    "run_id": "342029a3",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "342029a3",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "1",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "4746",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 12,
+    "findings": 24,
+    "traces": 21,
+    "dedupe_groups": 21,
+    "uncovered_surfaces": 37,
+    "hardening_notes": 7,
+    "prior_exclusions": 0,
+    "costs": 105,
+    "sqlite_sequence": 2,
+    "artifacts": 116
+   },
+   "db_sha256": "ea08b053b80c1bf3137a2bb690e7ce237bcc70eb0ddee689952a834e1a9e4781"
+  },
+  {
+   "id": "34d3d4d9",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790014084.2231517,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/34d3d4d9/target",
+    "run_id": "34d3d4d9",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "c581e3a0a34b443e79cea4023f9059c78b3ebe14d60bc48089aa857b33e47eb5"
+  },
+  {
+   "id": "3829d45c",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "3829d45c",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "436",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "3c019dec",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "3c019dec",
+    "slug": "realvuln-pygoat",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "1665",
+    "timeout_s": "5400",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "3e5fd985",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789872884.4310524,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/3e5fd985/target",
+    "run_id": "3e5fd985",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "3e5fd985",
+    "slug": "realvuln-pygoat",
+    "trial": "3",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "17851",
+    "recon": "40",
+    "max_hours": "3",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 34,
+    "findings": 62,
+    "traces": 55,
+    "dedupe_groups": 55,
+    "uncovered_surfaces": 75,
+    "hardening_notes": 50,
+    "prior_exclusions": 0,
+    "costs": 274,
+    "sqlite_sequence": 2,
+    "artifacts": 308
+   },
+   "db_sha256": "d8c810d55a65b10350adef5d6309cc880ba97686da592a0043d87cb4aca6b52f"
+  },
+  {
+   "id": "4097ff6a",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790024522.445294,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/4097ff6a/target",
+    "run_id": "4097ff6a",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "fae57413bd3e47e811b1732ea81d029cdd74a6b5a59f7d62be5cefce6a63bb48"
+  },
+  {
+   "id": "4231c7a4",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "4231c7a4",
+    "slug": "realvuln-intentionally-vulnerable-python-application",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "959",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "43f4b298",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "43f4b298",
+    "slug": "realvuln-dvpwa",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "337",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "4474b4a7",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790038042.4004555,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/4474b4a7/target",
+    "run_id": "4474b4a7",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "4b62c778768f1aeb8288fa377cb984022dd6d2d6d5800c9f9a465b1c55cd1b98"
+  },
+  {
+   "id": "45e21750",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789989448.6926172,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/45e21750/target",
+    "run_id": "45e21750",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "45e21750",
+    "slug": "realvuln-intentionally-vulnerable-python-application",
+    "trial": "1",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "3953",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "provider": "unsloth",
+    "scanner_tag": "unsloth-qwen38-q4",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 6,
+    "findings": 5,
+    "traces": 4,
+    "dedupe_groups": 4,
+    "uncovered_surfaces": 2,
+    "hardening_notes": 6,
+    "prior_exclusions": 0,
+    "costs": 22,
+    "sqlite_sequence": 2,
+    "artifacts": 27
+   },
+   "db_sha256": "092d0e3d633e9c4de70488727f774cd98bab3f4b0c0182bc34f048f5af3c84fb"
+  },
+  {
+   "id": "4790be1d",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789791563.2578273,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/4790be1d/target",
+    "run_id": "4790be1d",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 7,
+    "findings": 14,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 16,
+    "hardening_notes": 13,
+    "prior_exclusions": 0,
+    "costs": 6,
+    "sqlite_sequence": 2,
+    "artifacts": 11
+   },
+   "db_sha256": "7b2d54f3a5597c7a5bcbf34ebbf25ab5063a5d528a29b38d2ace065423793777"
+  },
+  {
+   "id": "48887a23",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789998197.4325662,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/48887a23/target",
+    "run_id": "48887a23",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "e628cd2c777131134fcfe133feae7a39c34c5cde5d2d4692b1216ac3d2d5f111"
+  },
+  {
+   "id": "4ff7230c",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "4ff7230c",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "197",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "51d23c56",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790045971.2935047,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/51d23c56/target",
+    "run_id": "51d23c56",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "51d23c56",
+    "slug": "realvuln-vampi",
+    "trial": "3",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "3164",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "provider": "unsloth",
+    "scanner_tag": "unsloth-qwen38-q4",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 13,
+    "findings": 1,
+    "traces": 1,
+    "dedupe_groups": 1,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 4,
+    "prior_exclusions": 0,
+    "costs": 8,
+    "sqlite_sequence": 2,
+    "artifacts": 11
+   },
+   "db_sha256": "186f760f033d91858dc2a88b3209b038e00e614a40eed77c0fdd7814f45e6843"
+  },
+  {
+   "id": "55177106",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790011081.1241384,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/55177106/target",
+    "run_id": "55177106",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "cc55061fe51d4d1bd3863e7fd165285f68eaf29394a4848c7ab2959309226124"
+  },
+  {
+   "id": "55daafbb",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789819591.2921243,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/55daafbb/target",
+    "run_id": "55daafbb",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "55daafbb",
+    "slug": "realvuln-dvpwa",
+    "trial": "1",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "9443",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 12,
+    "findings": 22,
+    "traces": 19,
+    "dedupe_groups": 19,
+    "uncovered_surfaces": 51,
+    "hardening_notes": 25,
+    "prior_exclusions": 0,
+    "costs": 98,
+    "sqlite_sequence": 2,
+    "artifacts": 110
+   },
+   "db_sha256": "05203736150184cd4b1825d3e782367d49e91ce86ed1ee18a3f77c018e8d48b2"
+  },
+  {
+   "id": "571f7999",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "58eec561",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789833485.4153628,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/58eec561/target",
+    "run_id": "58eec561",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "58eec561",
+    "slug": "realvuln-dvpwa",
+    "trial": "3",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "5366",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 11,
+    "findings": 16,
+    "traces": 16,
+    "dedupe_groups": 16,
+    "uncovered_surfaces": 34,
+    "hardening_notes": 25,
+    "prior_exclusions": 0,
+    "costs": 76,
+    "sqlite_sequence": 2,
+    "artifacts": 87
+   },
+   "db_sha256": "19edf24108d8208d911ae7683063c4d318a88a95890060b29aff9ddf9533dea8"
+  },
+  {
+   "id": "5e511723",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790013749.569265,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/5e511723/target",
+    "run_id": "5e511723",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "afe7fd004db55340c96cc6a8ad24ff0c543e04786b5427a6caa2752ea382e39e"
+  },
+  {
+   "id": "66794d1e",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790004143.319015,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/66794d1e/target",
+    "run_id": "66794d1e",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "4a6ee82a81649566588ef019681d68f4f97c3531d963c129857f300c44992641"
+  },
+  {
+   "id": "68ced559",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789779165.764311,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/68ced559/target",
+    "run_id": "68ced559",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "68ced559",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "1",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "2667",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 9,
+    "findings": 12,
+    "traces": 10,
+    "dedupe_groups": 10,
+    "uncovered_surfaces": 49,
+    "hardening_notes": 16,
+    "prior_exclusions": 0,
+    "costs": 56,
+    "sqlite_sequence": 2,
+    "artifacts": 65
+   },
+   "db_sha256": "cea9503f9e89e922f964a7228263783e7bede72753c749aeea389a2de88f8179"
+  },
+  {
+   "id": "6b0dd9fa",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "6b0dd9fa",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "31",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "6bc5b43a",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790017700.220754,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/6bc5b43a/target",
+    "run_id": "6bc5b43a",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "95d68e7f9f1e138ddfe3e3665c0e6127577cd3f3471d02d8c6396499a4c050ee"
+  },
+  {
+   "id": "6be7f0b2",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "6be7f0b2",
+    "slug": "realvuln-dvpwa",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "14",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "6e1049d7",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "6e1049d7",
+    "slug": "realvuln-pygoat",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "133",
+    "timeout_s": "5400",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "6f7179f2",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790021816.1934397,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/6f7179f2/target",
+    "run_id": "6f7179f2",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "18d7e40970b07913b2b774da4a18fa35db60ecbd919685eda2aefb38c92e9cab"
+  },
+  {
+   "id": "72e3a04d",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790006448.9305422,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/72e3a04d/target",
+    "run_id": "72e3a04d",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "a09e7b4986588812e2af7461a2d9abc6d0f117a22d1cce1fdca422e8d1d8eb17"
+  },
+  {
+   "id": "7be4ded7",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789761916.5059042,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/7be4ded7/target",
+    "run_id": "7be4ded7",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "7be4ded7",
+    "slug": "realvuln-intentionally-vulnerable-python-application",
+    "trial": "1",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "3506",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 7,
+    "findings": 11,
+    "traces": 10,
+    "dedupe_groups": 10,
+    "uncovered_surfaces": 33,
+    "hardening_notes": 5,
+    "prior_exclusions": 0,
+    "costs": 51,
+    "sqlite_sequence": 2,
+    "artifacts": 58
+   },
+   "db_sha256": "e2528cbcc2cf65b500fc6a8fa2ed8222754b10416bb8a6428f48d7ac5cf1f8ca"
+  },
+  {
+   "id": "7c950684",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789994362.3949952,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/7c950684/target",
+    "run_id": "7c950684",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "3c8278fa436ead9d656936259a85361bc6e8881d7e1c132dd8c252d41ebc1284"
+  },
+  {
+   "id": "7cbb68c3",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789774341.5531068,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/7cbb68c3/target",
+    "run_id": "7cbb68c3",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "7cbb68c3",
+    "slug": "realvuln-vampi",
+    "trial": "3",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "4799",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 14,
+    "findings": 20,
+    "traces": 17,
+    "dedupe_groups": 17,
+    "uncovered_surfaces": 51,
+    "hardening_notes": 20,
+    "prior_exclusions": 0,
+    "costs": 90,
+    "sqlite_sequence": 2,
+    "artifacts": 102
+   },
+   "db_sha256": "b3f901c577bbb6bb1dbec328238d32d814963ad3586f373f94ded1bf125151f3"
+  },
+  {
+   "id": "7d93dff7",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "7ffd60e8",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "7ffd60e8",
+    "slug": "realvuln-vampi",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "1028",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "80635005",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "80635005",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "18",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "80702e8c",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790027180.7345328,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/80702e8c/target",
+    "run_id": "80702e8c",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 23,
+    "findings": 2,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 1,
+    "prior_exclusions": 0,
+    "costs": 2,
+    "sqlite_sequence": 2,
+    "artifacts": 3
+   },
+   "db_sha256": "c8c6c6a04a5c498b38c1fa9edf02406927ef8bc5c0c7e0c74bb93d7d5c73be64"
+  },
+  {
+   "id": "831fe508",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "831fe508",
+    "slug": "realvuln-vampi",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "990",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "83a3b7fa",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "86fabf6b",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790008604.411484,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/86fabf6b/target",
+    "run_id": "86fabf6b",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "94add005b8512c3ff191b5d121d5b559a1a385cfbfc3f13dfb78b307446a84d3"
+  },
+  {
+   "id": "88febd3a",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790032534.1875134,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/88febd3a/target",
+    "run_id": "88febd3a",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "c29eda5595599728bb0220b09f736fa0de2ec5fc7370ce94a24af92fbf5dc104"
+  },
+  {
+   "id": "8f2121ea",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "8f2121ea",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "17",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "926025bc",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790015400.3901415,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/926025bc/target",
+    "run_id": "926025bc",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "7b902c0d08930a4bcaac6926a1e4ea7d656aadd407106633e1acb25abb20e76d"
+  },
+  {
+   "id": "95aa502f",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "95aa502f",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "264",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "96174186",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789843633.9180267,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/96174186/target",
+    "run_id": "96174186",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "96174186",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "2",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "4532",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 15,
+    "findings": 24,
+    "traces": 21,
+    "dedupe_groups": 21,
+    "uncovered_surfaces": 47,
+    "hardening_notes": 20,
+    "prior_exclusions": 0,
+    "costs": 109,
+    "sqlite_sequence": 2,
+    "artifacts": 124
+   },
+   "db_sha256": "9ab81c021941fceb0b306f6b6f94456e69990cfbc77e05a79a5b76b77138c191"
+  },
+  {
+   "id": "96437389",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790023333.3298109,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/96437389/target",
+    "run_id": "96437389",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "f21c05fd3b2617866739ff135849ebc12c2a6ff6a19625b3c7c9ea9a408450e2"
+  },
+  {
+   "id": "979665fa",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789848263.142851,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/979665fa/target",
+    "run_id": "979665fa",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "979665fa",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "3",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "6230",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 13,
+    "findings": 18,
+    "traces": 15,
+    "dedupe_groups": 15,
+    "uncovered_surfaces": 22,
+    "hardening_notes": 17,
+    "prior_exclusions": 0,
+    "costs": 82,
+    "sqlite_sequence": 2,
+    "artifacts": 94
+   },
+   "db_sha256": "297984bc4ceed85d8209d76ff5e96107ba5a92d4868c525c59516486c240db7c"
+  },
+  {
+   "id": "98186ccb",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "98186ccb",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "355",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "9bf16d0a",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790025920.0363533,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/9bf16d0a/target",
+    "run_id": "9bf16d0a",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "2b9e3c601953cbd92b77078255370b798941bf1cd73597ebfdc0c36caa37dac6"
+  },
+  {
+   "id": "9c5ba28f",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "9c5ba28f",
+    "slug": "realvuln-pygoat",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "66",
+    "timeout_s": "5400",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "a5b6657b",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790010161.5278893,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/a5b6657b/target",
+    "run_id": "a5b6657b",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "d1f10cfb96c92c4dc5f0bc69b411f9cc1649b908e1dfdf3eee88c79ac1822eac"
+  },
+  {
+   "id": "a76e3350",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "a76e3350",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "296",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "b2826b7f",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790018719.3986611,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/b2826b7f/target",
+    "run_id": "b2826b7f",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "1d5596e93077e3f1881047a399018d8e4dd9cf445cbbb64a59671c90b40365f0"
+  },
+  {
+   "id": "b6a068dc",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789995997.0259492,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/b6a068dc/target",
+    "run_id": "b6a068dc",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "6c87ca7f15b8f6afb926e9c5dae892485cde8d18a4ad98b1a65ee14dcf2fbdad"
+  },
+  {
+   "id": "b8389c35",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789765437.9303298,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/b8389c35/target",
+    "run_id": "b8389c35",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "b8389c35",
+    "slug": "realvuln-vampi",
+    "trial": "1",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "4166",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 14,
+    "findings": 15,
+    "traces": 15,
+    "dedupe_groups": 15,
+    "uncovered_surfaces": 47,
+    "hardening_notes": 26,
+    "prior_exclusions": 0,
+    "costs": 74,
+    "sqlite_sequence": 2,
+    "artifacts": 88
+   },
+   "db_sha256": "e2d2dbad543a6f21468fc30fda160af4e996a36dc6c304292d0eae952ce67bc9"
+  },
+  {
+   "id": "b9f18db1",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790025316.8705585,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/b9f18db1/target",
+    "run_id": "b9f18db1",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "bc93a22f3bf426aefb1948cd8b88594b34c60381c45791030157090a3550ba9c"
+  },
+  {
+   "id": "ba773f74",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789997625.80487,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/ba773f74/target",
+    "run_id": "ba773f74",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "31c507d948ed69c053c001ebbb1fb24a0f77219479f60fb645fe85c44b64dd17"
+  },
+  {
+   "id": "bae45718",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789781852.6078315,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/bae45718/target",
+    "run_id": "bae45718",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "bae45718",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "2",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "2926",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 12,
+    "findings": 14,
+    "traces": 13,
+    "dedupe_groups": 13,
+    "uncovered_surfaces": 49,
+    "hardening_notes": 23,
+    "prior_exclusions": 0,
+    "costs": 67,
+    "sqlite_sequence": 2,
+    "artifacts": 79
+   },
+   "db_sha256": "0372782816682599a2208b4ef2420e84025c7d3d5a22b72c5397cce7962f8ce5"
+  },
+  {
+   "id": "bcaabd64",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "bcaabd64",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "18",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "bec5cfb8",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "bec5cfb8",
+    "slug": "realvuln-lets-be-bad-guys",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "96",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "c124ddcf",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "c124ddcf",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "224",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "c3a4b17e",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789769762.5781128,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/c3a4b17e/target",
+    "run_id": "c3a4b17e",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "c3a4b17e",
+    "slug": "realvuln-vampi",
+    "trial": "2",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "3855",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 15,
+    "findings": 22,
+    "traces": 22,
+    "dedupe_groups": 22,
+    "uncovered_surfaces": 55,
+    "hardening_notes": 32,
+    "prior_exclusions": 0,
+    "costs": 104,
+    "sqlite_sequence": 2,
+    "artifacts": 119
+   },
+   "db_sha256": "e12f9f7c2cde46bd11e7dc52d01a4ad8e27108bcd8689ccd74df140e90e24056"
+  },
+  {
+   "id": "c90b649d",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "cd0243d3",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790009968.9527347,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/cd0243d3/target",
+    "run_id": "cd0243d3",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "98717a0e24da7997371605b742bb8cd118b196e9a6d2e89c7e161f2065db85a6"
+  },
+  {
+   "id": "d343ab24",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "d343ab24",
+    "slug": "realvuln-dvpwa",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "328",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "d3daca9c",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790015397.6223452,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/d3daca9c/target",
+    "run_id": "d3daca9c",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "a1aa471aff7bc0af360dbfeda92b2554a18701f5b77e2c7e1e6a035a614fbdaf"
+  },
+  {
+   "id": "d94af42b",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "d94af42b",
+    "slug": "realvuln-dvpwa",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "19",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "d9771772",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "da341df4",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "ddf88c62",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "ddf88c62",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "2",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "22",
+    "timeout_s": "2700",
+    "model": "glm-5.3",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "de307c57",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789998398.2227023,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/de307c57/target",
+    "run_id": "de307c57",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "5c417925e120a696b25243eaba42f59009f35d5a89ce243822398f003709ae28"
+  },
+  {
+   "id": "e5dc6c49",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "e5dc6c49",
+    "slug": "realvuln-vampi",
+    "trial": "3",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "658",
+    "timeout_s": "2700",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "e62b4ac9",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790026947.4481406,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/e62b4ac9/target",
+    "run_id": "e62b4ac9",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "54d104664af1fa39e24fd6a9b9a432514411b41b53732788c054913fa14b0a9f"
+  },
+  {
+   "id": "e6f7e508",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ],
+   "benchmark_meta": {
+    "opaque": "e6f7e508",
+    "slug": "realvuln-pygoat",
+    "trial": "1",
+    "arm": "v",
+    "status": "0",
+    "wall_s": "1127",
+    "timeout_s": "5400",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "thinking": "off",
+    "pi_version": "0.85.1"
+   }
+  },
+  {
+   "id": "e9613330",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789784813.614957,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/e9613330/target",
+    "run_id": "e9613330",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "e9613330",
+    "slug": "realvuln-damn-vulnerable-flask-application",
+    "trial": "3",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "3126",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 11,
+    "findings": 13,
+    "traces": 9,
+    "dedupe_groups": 9,
+    "uncovered_surfaces": 30,
+    "hardening_notes": 21,
+    "prior_exclusions": 0,
+    "costs": 59,
+    "sqlite_sequence": 2,
+    "artifacts": 69
+   },
+   "db_sha256": "6a529d417ef495258f88c732431689fd558eaae47a5c3f4df13e37374ddfe9cd"
+  },
+  {
+   "id": "ea818cf8",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790045530.5247648,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/ea818cf8/target",
+    "run_id": "ea818cf8",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "b5f9b8f2e1612cdbec5363460eef073ebc5653fcca74cab697ac65e39971131f"
+  },
+  {
+   "id": "eb4cef14",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790036551.125766,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/eb4cef14/target",
+    "run_id": "eb4cef14",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "9abece5a1d3a797db1c7050d77d2c7a2aa0044b48e82412c33fb61ea21951bfe"
+  },
+  {
+   "id": "ed2ede3f",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790017419.3978922,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/ed2ede3f/target",
+    "run_id": "ed2ede3f",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "aaadb5afc0553d8729bb6c19485eeee9ae399c9ee25179a11b8459afee7a4e0b"
+  },
+  {
+   "id": "f0aa21fe",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789814821.7150927,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/f0aa21fe/target",
+    "run_id": "f0aa21fe",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "f0aa21fe",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "3",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "4750",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 11,
+    "findings": 17,
+    "traces": 13,
+    "dedupe_groups": 13,
+    "uncovered_surfaces": 36,
+    "hardening_notes": 24,
+    "prior_exclusions": 0,
+    "costs": 76,
+    "sqlite_sequence": 2,
+    "artifacts": 87
+   },
+   "db_sha256": "b27e30178a0a5ba719afb3e8eb0ebd8646c3d3dec2a209147b081cfc1c6749e0"
+  },
+  {
+   "id": "f1f44980",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789998818.446617,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/f1f44980/target",
+    "run_id": "f1f44980",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "f1f44980",
+    "slug": "realvuln-vampi",
+    "trial": "1",
+    "arm": "h",
+    "status": "1",
+    "wall_s": "4286",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "unsloth/Qwen3.8-27B-GGUF",
+    "provider": "unsloth",
+    "scanner_tag": "unsloth-qwen38-q4",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 5,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 1,
+    "sqlite_sequence": 2,
+    "artifacts": 2
+   },
+   "db_sha256": "d2e0e8ddddff8777b2c2a25efb8532721f5eac8d5933f524c6355f808645e8e7"
+  },
+  {
+   "id": "f79ee8e0",
+   "has_db": false,
+   "has_manifest": false,
+   "logs": [
+    "pi.log"
+   ]
+  },
+  {
+   "id": "f8437736",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789810421.932624,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/f8437736/target",
+    "run_id": "f8437736",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "f8437736",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "2",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "4378",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 8,
+    "findings": 13,
+    "traces": 10,
+    "dedupe_groups": 10,
+    "uncovered_surfaces": 22,
+    "hardening_notes": 22,
+    "prior_exclusions": 0,
+    "costs": 58,
+    "sqlite_sequence": 2,
+    "artifacts": 66
+   },
+   "db_sha256": "638f157151452f3d81f3932dc74fae5f38a9cd5ebe680330d02b0227325d3658"
+  },
+  {
+   "id": "fa0d72a6",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1789787959.7700968,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/fa0d72a6/target",
+    "run_id": "fa0d72a6",
+    "schema_version": 1
+   },
+   "benchmark_meta": {
+    "opaque": "fa0d72a6",
+    "slug": "realvuln-python-insecure-app",
+    "trial": "1",
+    "arm": "h",
+    "status": "0",
+    "wall_s": "3588",
+    "recon": "20",
+    "max_hours": "2",
+    "model": "glm-5.3",
+    "thinking": "unset-sdk"
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 1,
+    "tasks": 9,
+    "findings": 12,
+    "traces": 8,
+    "dedupe_groups": 8,
+    "uncovered_surfaces": 25,
+    "hardening_notes": 22,
+    "prior_exclusions": 0,
+    "costs": 54,
+    "sqlite_sequence": 2,
+    "artifacts": 63
+   },
+   "db_sha256": "edfd4d7792a89b6ebf58d5950658a87c1f1cbcd7af688c77280fbfc126451566"
+  },
+  {
+   "id": "fc1de46d",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790020395.7306035,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/fc1de46d/target",
+    "run_id": "fc1de46d",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "24495ad4fb701b74495d655059efb9a433bb8cc663fe0be2d8b5c84789dcc70a"
+  },
+  {
+   "id": "feab3d3d",
+   "has_db": true,
+   "has_manifest": true,
+   "logs": [
+    "codesec.log"
+   ],
+   "manifest": {
+    "config_path": "/home/user/g/codesec/config/stages.yaml",
+    "config_sha256": "6e8b1724dd26440895b9b714e018f519d176d3e3d5be0442a74ce3feccf55e44",
+    "created_at": 1790004149.2243333,
+    "pipeline": "legacy",
+    "repo_path": "/tmp/feab3d3d/target",
+    "run_id": "feab3d3d",
+    "schema_version": 1
+   },
+   "db_table_counts": {
+    "schema_meta": 1,
+    "runs": 1,
+    "recon_outputs": 0,
+    "tasks": 0,
+    "findings": 0,
+    "traces": 0,
+    "dedupe_groups": 0,
+    "uncovered_surfaces": 0,
+    "hardening_notes": 0,
+    "prior_exclusions": 0,
+    "costs": 0,
+    "sqlite_sequence": 0,
+    "artifacts": 0
+   },
+   "db_sha256": "68c75831d0e7bc2ccfbb5b356ec2dc297959637c984477b61214f376eeed485c"
+  }
+ ]
+}

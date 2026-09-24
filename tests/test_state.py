@@ -347,9 +347,7 @@ def test_completion_gaps_require_terminal_work_for_every_input(tmp_path: Path) -
         },
     )
     db.assign_finding_group(run_id, "f_1", "g_1", True)
-    assert db.completion_gaps(run_id) == [
-        "canonical finding f_1 has no terminal trace"
-    ]
+    assert db.completion_gaps(run_id) == []
 
     db.add_trace(
         run_id,
@@ -362,6 +360,91 @@ def test_completion_gaps_require_terminal_work_for_every_input(tmp_path: Path) -
         },
     )
     assert db.completion_gaps(run_id) == []
+
+
+def test_completion_gaps_group_without_canonical_still_reported(
+    tmp_path: Path,
+) -> None:
+    db = StateDB(tmp_path / "state.db")
+    run_id = db.create_run("/repo", "run")
+    db.add_task(run_id, _task())
+    db.update_task_status(run_id, "t_1", "done")
+    db.add_finding(run_id, "t_1", _finding())
+    db.set_finding_validation(
+        run_id,
+        "f_1",
+        "confirmed",
+        {"finding_id": "f_1", "verdict": "confirmed"},
+    )
+    db.add_dedupe_group(
+        run_id,
+        {
+            "group_id": "g_orphan",
+            "root_cause": "untrusted input reaches a database query",
+            "canonical_finding_id": "f_missing",
+            "member_finding_ids": ["f_1"],
+        },
+    )
+    db.assign_finding_group(run_id, "f_1", "g_orphan", False)
+    gaps = db.completion_gaps(run_id)
+    assert "confirmed finding f_1 is not grouped" not in gaps
+    assert any("g_orphan" in g and "no canonical" in g for g in gaps)
+
+
+def test_get_report_findings_includes_untraced_and_unreachable(
+    tmp_path: Path,
+) -> None:
+    db = StateDB(tmp_path / "state.db")
+    run_id = db.create_run("/repo", "run")
+    db.add_task(run_id, _task())
+    db.update_task_status(run_id, "t_1", "done")
+    for fid in ("f_untraced", "f_unreachable", "f_reachable"):
+        db.add_finding(run_id, "t_1", _finding(fid))
+        db.set_finding_validation(
+            run_id, fid, "confirmed", {"finding_id": fid, "verdict": "confirmed"}
+        )
+        db.add_dedupe_group(
+            run_id,
+            {
+                "group_id": f"g_{fid}",
+                "root_cause": "untrusted input reaches a database query",
+                "canonical_finding_id": fid,
+                "member_finding_ids": [fid],
+            },
+        )
+        db.assign_finding_group(run_id, fid, f"g_{fid}", True)
+    db.add_trace(
+        run_id,
+        "f_unreachable",
+        {
+            "finding_id": "f_unreachable",
+            "reachable": False,
+            "confidence": 0.2,
+            "rationale": "no HTTP path reaches the sink",
+            "entry_points": [],
+            "call_chain": [],
+        },
+    )
+    db.add_trace(
+        run_id,
+        "f_reachable",
+        {
+            "finding_id": "f_reachable",
+            "reachable": True,
+            "confidence": 0.9,
+            "rationale": "HTTP input reaches the query executor.",
+            "entry_points": [{"kind": "http_route", "location": "a.py:1"}],
+            "call_chain": [
+                {"file": "a.py", "function": "route", "line": 1},
+            ],
+        },
+    )
+    reportable = {f.finding_id: tr for f, tr in db.get_report_findings(run_id)}
+    assert set(reportable) == {"f_untraced", "f_unreachable", "f_reachable"}
+    assert reportable["f_untraced"] is None
+    assert reportable["f_unreachable"]["reachable"] is False
+    reachable = {f.finding_id for f, _tr in db.get_reachable_canonical_findings(run_id)}
+    assert reachable == {"f_reachable"}
 
 
 def test_run_and_task_lifecycle(tmp_path: Path) -> None:

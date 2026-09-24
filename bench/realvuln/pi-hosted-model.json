@@ -1,0 +1,28 @@
+{
+  "$comment": "Isolated Pi provider/model definition for the repaired GLM-5.3 experiment (P03/P10). Copied into PI_CODING_AGENT_DIR/models.json for the V arm; baseUrl is replaced with the gateway's actual listen address at deploy time. compat overrides replicate the z.ai request format through the gateway (Pi 0.85.1: thinkingFormat zai sends thinking:{type:enabled,clear_thinking:false}; supportsReasoningEffort adds reasoning_effort; maxTokensField max_tokens). samplingParams pins temperature 0.6 with NO top_p. maxTokens 32768 matches the frozen per-request output cap; contextWindow 262144 is the client ceiling.",
+  "providers": {
+    "zaihosted": {
+      "baseUrl": "http://gateway:8800/v1",
+      "api": "openai-completions",
+      "apiKey": "gateway",
+      "models": [
+        {
+          "id": "glm-5.3",
+          "name": "GLM-5.3 (hosted, via gateway)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+          "samplingParams": { "temperature": 0.6 },
+          "compat": {
+            "thinkingFormat": "zai",
+            "supportsReasoningEffort": true,
+            "maxTokensField": "max_tokens",
+            "supportsUsageInStreaming": true
+          }
+        }
+      ]
+    }
+  }
+}

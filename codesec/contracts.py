@@ -81,6 +81,48 @@ def filter_task_batch(tasks: list[dict], repo_root: Path) -> list[dict]:
     return kept
 
 
+def _hunt_finding_violation(
+    finding: dict,
+    root: Path,
+    seen_ids: set[str],
+    reserved_finding_ids: set[str],
+) -> str | None:
+    """Per-finding contract check shared by validate/filter paths."""
+    finding_id = str(finding.get("finding_id", ""))
+    if finding_id in seen_ids:
+        return f"duplicate finding IDs: [{finding_id!r}]"
+    if finding_id in reserved_finding_ids:
+        return f"finding IDs already exist in this run: [{finding_id!r}]"
+    if not str(finding.get("evidence_snippet", "")).strip():
+        return f"finding {finding_id!r} has empty evidence"
+    reported = Path(str(finding.get("file", "")))
+    resolved = (root / reported).resolve()
+    if reported.is_absolute() or not resolved.is_relative_to(root):
+        return (
+            f"finding {finding_id!r} file is outside repository: "
+            f"{finding.get('file')!r}"
+        )
+    if not resolved.is_file():
+        return (
+            f"finding {finding_id!r} file does not exist: "
+            f"{finding.get('file')!r}"
+        )
+    line_count = len(resolved.read_text(errors="replace").splitlines())
+    line_start = finding.get("line_start")
+    line_end = finding.get("line_end")
+    if not (
+        isinstance(line_start, int)
+        and isinstance(line_end, int)
+        and 1 <= line_start <= line_end <= line_count
+    ):
+        return (
+            f"finding {finding_id!r} source range is invalid "
+            f"for {finding.get('file')!r}: {line_start}-{line_end} "
+            f"(file has {line_count} lines)"
+        )
+    return None
+
+
 def validate_hunt_output(
     expected_task_id: str,
     payload: dict,
@@ -94,61 +136,65 @@ def validate_hunt_output(
             "hunt output task_id does not match request: "
             f"expected={expected_task_id!r}, actual={payload.get('task_id')!r}"
         )
-    finding_ids = [
-        str(finding.get("finding_id", ""))
-        for finding in payload.get("findings", [])
-    ]
-    duplicates = sorted(
-        finding_id
-        for finding_id, count in Counter(finding_ids).items()
-        if count > 1
-    )
-    if duplicates:
-        raise StageContractError(f"duplicate finding IDs: {duplicates}")
-    collisions = sorted(
-        set(finding_ids) & (reserved_finding_ids or set())
-    )
-    if collisions:
-        raise StageContractError(
-            f"finding IDs already exist in this run: {collisions}"
-        )
     root = repo_root.resolve()
+    seen: set[str] = set()
+    reserved = reserved_finding_ids or set()
     for finding in payload.get("findings", []):
-        if not str(finding.get("evidence_snippet", "")).strip():
-            raise StageContractError(
-                f"finding {finding.get('finding_id')!r} has empty evidence"
-            )
-        reported = Path(str(finding.get("file", "")))
-        resolved = (root / reported).resolve()
-        if reported.is_absolute() or not resolved.is_relative_to(root):
-            raise StageContractError(
-                f"finding {finding.get('finding_id')!r} file is outside repository: "
-                f"{finding.get('file')!r}"
-            )
-        if not resolved.is_file():
-            raise StageContractError(
-                f"finding {finding.get('finding_id')!r} file does not exist: "
-                f"{finding.get('file')!r}"
-            )
-        line_count = len(resolved.read_text(errors="replace").splitlines())
-        line_start = finding.get("line_start")
-        line_end = finding.get("line_end")
-        if not (
-            isinstance(line_start, int)
-            and isinstance(line_end, int)
-            and 1 <= line_start <= line_end <= line_count
-        ):
-            raise StageContractError(
-                f"finding {finding.get('finding_id')!r} source range is invalid "
-                f"for {finding.get('file')!r}: {line_start}-{line_end} "
-                f"(file has {line_count} lines)"
-            )
+        violation = _hunt_finding_violation(
+            finding, root, seen, reserved
+        )
+        if violation is not None:
+            raise StageContractError(violation)
+        seen.add(str(finding.get("finding_id", "")))
 
     # Optional top-level buckets (W5/W9). These are advisory payloads the
     # hunter volunteers — malformed content is sanitized, never a reason
     # to reject an otherwise valid hunt output.
     _sanitize_optional_list(payload, "hardening", ("file", "note"))
     _sanitize_optional_list(payload, "uncovered", ("surface",))
+
+
+def filter_hunt_findings(
+    expected_task_id: str,
+    payload: dict,
+    repo_root: Path,
+    *,
+    reserved_finding_ids: set[str] | None = None,
+) -> tuple[list[dict], list[dict]]:
+    """Drop findings that violate per-finding invariants.
+
+    Models occasionally emit one bad row (invented path, off-by-a-few
+    line range) inside an otherwise valid hunt payload. Failing the
+    whole task — and with it the run's stage coverage — used to abort
+    the pipeline, matching the old recon behavior that filter_task_batch
+    replaced. Keep validate_hunt_output() strict for tests; hunt calls
+    this filter instead. A payload-level task_id mismatch still raises
+    (the response is not for this task at all). Returns (kept, dropped)
+    where dropped entries are {"finding_id", "reason"}."""
+    if payload.get("task_id") != expected_task_id:
+        raise StageContractError(
+            "hunt output task_id does not match request: "
+            f"expected={expected_task_id!r}, actual={payload.get('task_id')!r}"
+        )
+    root = repo_root.resolve()
+    seen: set[str] = set()
+    reserved = reserved_finding_ids or set()
+    kept: list[dict] = []
+    dropped: list[dict] = []
+    for finding in payload.get("findings", []) or []:
+        violation = _hunt_finding_violation(
+            finding, root, seen, reserved
+        )
+        if violation is None:
+            kept.append(finding)
+            seen.add(str(finding.get("finding_id", "")))
+        else:
+            dropped.append(
+                {"finding_id": finding.get("finding_id"), "reason": violation}
+            )
+    _sanitize_optional_list(payload, "hardening", ("file", "note"))
+    _sanitize_optional_list(payload, "uncovered", ("surface",))
+    return kept, dropped
 
 
 def _sanitize_optional_list(
@@ -229,16 +275,28 @@ def validate_trace_output(
     if status == "reachable" and not (
         payload.get("entry_points")
         and payload.get("external_inputs")
-        and len(payload.get("call_chain", [])) >= 2
+        and len(payload.get("call_chain", [])) >= 1
     ):
         raise StageContractError(
             f"reachable trace {expected_finding_id!r} lacks an entry point, "
-            "external input, or two-frame call chain"
+            "external input, or call chain"
         )
     if status == "unreachable" and not payload.get("blockers"):
         raise StageContractError(
             f"unreachable trace {expected_finding_id!r} lacks a concrete blocker"
         )
+    if status == "uncertain":
+        uncertainty = payload.get("uncertainty")
+        if not (
+            isinstance(uncertainty, dict)
+            and uncertainty.get("kind") in {"source_evidence", "operational"}
+            and isinstance(uncertainty.get("reason_code"), str)
+            and uncertainty["reason_code"]
+        ):
+            raise StageContractError(
+                f"uncertain trace {expected_finding_id!r} lacks a typed "
+                "uncertainty (kind: source_evidence|operational, reason_code)"
+            )
 
     root = repo_root.resolve()
     for frame in payload.get("call_chain", []):
@@ -251,12 +309,29 @@ def validate_trace_output(
             or not resolved.is_file()
         ):
             raise StageContractError(
-                f"trace frame file is outside repository or missing: {reported}"
+                f"trace frame file is outside repository or missing: {reported} "
+                "(dependency/framework boundaries belong in boundary_frames)"
             )
         line_count = len(resolved.read_text(errors="replace").splitlines())
         if not isinstance(line, int) or not 1 <= line <= line_count:
             raise StageContractError(
-                f"trace frame line is invalid for {reported}: {line}"
+                f"trace frame line is invalid for {reported}: {line} "
+                f"(file has {line_count} lines)"
+            )
+    # Boundary frames are explicit assumptions about dependency/framework
+    # crossings — validated for shape only, never treated as repo files.
+    for boundary in payload.get("boundary_frames", []) or []:
+        if not (
+            isinstance(boundary, dict)
+            and isinstance(boundary.get("boundary"), str)
+            and boundary.get("boundary")
+            and isinstance(boundary.get("location"), str)
+            and isinstance(boundary.get("assumption"), str)
+            and boundary.get("assumption")
+        ):
+            raise StageContractError(
+                "boundary frame must carry boundary, location, and a "
+                "non-empty assumption"
             )
     if (
         status == "reachable"
@@ -273,8 +348,25 @@ def validate_trace_output(
         ):
             raise StageContractError(
                 f"reachable trace {expected_finding_id!r} does not end at "
-                f"the authoritative sink {expected_file}:{start}-{end}"
+                f"the authoritative sink {expected_file}:{start}-{end} "
+                "(serialize the chain entry-to-sink; the final frame must be "
+                "the supplied sink)"
             )
+
+
+def trace_failure_reason_code(error: StageContractError) -> str:
+    """Map a failed trace contract invariant to a machine-readable
+    reason code (P04): the stored uncertain row says WHY it failed."""
+    text = str(error)
+    if "does not end at the authoritative sink" in text:
+        return "sink_mismatch"
+    if "outside repository or missing" in text:
+        return "missing_repo_frame"
+    if "line is invalid" in text:
+        return "invalid_line"
+    if "lacks a typed uncertainty" in text:
+        return "missing_uncertainty_type"
+    return "other_contract_violation"
 
 
 def validate_dedupe_partition(

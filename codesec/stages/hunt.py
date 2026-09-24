@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Awaitable, Callable
 
-from codesec.contracts import StageContractError, validate_hunt_output
+from codesec.contracts import StageContractError, filter_hunt_findings
 from codesec.hints import hints_for, load_hints
 from codesec.runner import (
     AgentRunError,
@@ -15,7 +15,11 @@ from codesec.runner import (
     run_agent,
 )
 from codesec.state import StateDB, Task
-from codesec.stages._common import StageContext, truncated_recon_summary
+from codesec.stages._common import (
+    StageContext,
+    record_input_size,
+    truncated_recon_summary,
+)
 
 log = logging.getLogger(__name__)
 
@@ -94,6 +98,7 @@ async def run_hunt(
                 user_input["policy"] = policy
             if prior_findings:
                 user_input["prior_findings"] = prior_findings
+            record_input_size(db, ctx.run_id, "hunt", task.task_id, user_input)
             try:
                 result = await run_agent(
                     stage="hunt",
@@ -110,6 +115,7 @@ async def run_hunt(
                     artifact_dir=ctx.results_dir("hunt"),
                     artifact_name=task.task_id,
                     repair_attempts=sc.repair_attempts,
+                    deadline=ctx.deadline,
                 )
             except QuotaExhaustedError:
                 # Subscription quota/session limit hit mid-flight. Don't burn
@@ -145,7 +151,7 @@ async def run_hunt(
                 str(result.artifact_path),
             )
             try:
-                validate_hunt_output(
+                findings, dropped = filter_hunt_findings(
                     task.task_id,
                     payload,
                     ctx.repo_path,
@@ -164,6 +170,21 @@ async def run_hunt(
                 db.update_task_status(ctx.run_id, task.task_id, "failed")
                 counters["tasks_failed"] += 1
                 return
+            if dropped:
+                log.warning(
+                    "[%s] hunt task %s: quarantined %d invalid findings: %s",
+                    ctx.run_id, task.task_id, len(dropped), dropped,
+                )
+                db.record_stage_event(
+                    ctx.run_id,
+                    "hunt",
+                    {
+                        "category": "degraded",
+                        "reason": "quarantined_findings",
+                        "task_id": task.task_id,
+                        "dropped": dropped,
+                    },
+                )
             if payload.get("hardening"):
                 db.record_hardening_notes(
                     ctx.run_id, task.task_id, payload["hardening"]
@@ -172,7 +193,6 @@ async def run_hunt(
                 db.record_uncovered_surfaces(
                     ctx.run_id, task.task_id, payload["uncovered"]
                 )
-            findings = payload.get("findings", []) or []
             for f in findings:
                 db.add_finding(ctx.run_id, task.task_id, f)
                 counters["findings"] += 1

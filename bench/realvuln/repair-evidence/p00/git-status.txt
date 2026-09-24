@@ -1,0 +1,22 @@
+ M .gitignore
+ M codesec/auth.py
+ M codesec/cli.py
+ M codesec/local_agent.py
+ M codesec/providers.py
+ M codesec/stages/report.py
+ M codesec/state.py
+ M prompts/08-report.md
+ M schemas/report.schema.json
+ M tests/test_auth.py
+ M tests/test_local_agent.py
+ M tests/test_local_engine_recon_repair.py
+ M tests/test_providers.py
+ M tests/test_report_stage.py
+ M tests/test_state.py
+?? bench/AUDIT-HARNESS-GLM53-REALVULN-2026-09-22.md
+?? bench/PLAN-LOCAL-VS-ZAI.md
+?? bench/PLAN-REALVULN-REPAIR-AND-RETEST.md
+?? bench/PLAN-SHIP-CONFIRMED.md
+?? bench/RESULTS-HARNESS-GLM53-REALVULN-2026-09-22.md
+?? bench/realvuln/
+?? tests/test_realvuln_harness.py

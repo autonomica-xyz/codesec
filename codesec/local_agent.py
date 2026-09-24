@@ -18,7 +18,6 @@ Same `run_agent` contract as codesec.runner so stages don't change.
 
 from __future__ import annotations
 
-import glob as _glob
 import hashlib
 import http.client
 import json
@@ -30,13 +29,19 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any
 
 from codesec.json_utils import extract_json, validate_schema
 from codesec.live_probe_mcp import (
     TOOL_INPUT_SCHEMA as _LIVE_PROBE_SCHEMA,
     http_request as _live_probe_request,
+)
+from codesec.reasoning import (
+    REASONING_DELTA_FIELDS,
+    effective_request_settings,
+    reasoning_from_dict,
+    spec_to_dict,
 )
 from codesec.runner import AgentResult, AgentRunError, TransientAgentError
 
@@ -275,6 +280,46 @@ def _prune_messages(messages: list, tools: list, max_tokens: int,
         messages.pop(2)
 
 
+def _run_bash(args: dict, cwd: Path, *, deadline_ts: float | None = None) -> str:
+    """Deadline-aware, process-group-controlled Bash tool (P05).
+
+    ``asyncio.to_thread`` cancellation cannot stop a blocking ``urllib``
+    call or a child shell, so instead: every child runs in its own process
+    group (setsid), the timeout is bounded by the remaining budget, and on
+    expiry (or budget exhaustion) the whole process GROUP is terminated —
+    grandchildren included — rather than waiting on an orphan."""
+    command = args["command"]
+    requested = float(args.get("timeout", 120) or 120)
+    if deadline_ts is not None:
+        remaining = deadline_ts - time.monotonic()
+        timeout = max(0.001, min(requested, remaining + 1.0))
+    else:
+        timeout = requested
+    proc = subprocess.Popen(
+        command,
+        shell=True,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,  # own process group: killable as a unit
+    )
+    import signal
+    try:
+        out, err = proc.communicate(timeout=timeout)
+        return (out + err)[:_READ_CAP] or "(no output)"
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            proc.kill()
+        out, err = proc.communicate()
+        return (
+            f"[bash timeout after {timeout:.1f}s — process group terminated]"
+            + (out + err)
+        )[:_READ_CAP]
+
+
 def _exec_tool(
     name: str,
     args: dict,
@@ -282,15 +327,60 @@ def _exec_tool(
     *,
     repo_root: Path | None = None,
     live_target: dict | None = None,
+    deadline_ts: float | None = None,
 ) -> str:
     repo = (repo_root or cwd).resolve()
 
-    def repository_path(raw: Any) -> Path:
+    def _resolve_in_repo(raw: Any) -> Path:
         candidate = Path(str(raw))
         resolved = (candidate if candidate.is_absolute() else repo / candidate).resolve()
         if not resolved.is_relative_to(repo):
             raise ValueError(f"path is outside repository: {raw!r}")
         return resolved
+
+    def repository_path(raw: Any) -> Path:
+        return _resolve_in_repo(raw)
+
+    def repository_scope(raw: Any, *, must_be_dir: bool = False) -> Path:
+        """Resolve a search scope (empty -> repo root) with an explicit
+        error for missing paths, never a silent "(no matches)"."""
+        if raw in (None, ""):
+            return repo
+        resolved = _resolve_in_repo(raw)
+        if not resolved.exists():
+            raise FileNotFoundError(f"no such file or directory under repo: {raw!r}")
+        if must_be_dir and not resolved.is_dir():
+            raise NotADirectoryError(f"path must be a directory, not a file: {raw!r}")
+        return resolved
+
+    def iter_repo_files(root: Path, pattern: str = "*") -> tuple[list[Path], int]:
+        """Centralized enumeration shared by Grep and Glob.
+
+        - Ignore rules apply to path parts RELATIVE TO the repo root, so a
+          repo root that is itself named e.g. `target` stays fully
+          searchable while a nested `target/` build directory is excluded.
+        - Deterministic: results are sorted by path.
+        - Symlinked directories are not traversed during recursion
+          (pathlib rglob does not follow them); symlinked files are accepted
+          only when they resolve back inside the repo. Escaping symlinks are
+          skipped and counted, never read.
+        """
+        files: list[Path] = []
+        escaped = 0
+        for path in sorted(root.rglob(pattern)):
+            if not path.is_file():
+                continue
+            try:
+                rel = path.relative_to(repo)
+            except ValueError:
+                continue
+            if any(part in _IGNORED_PARTS for part in rel.parts):
+                continue
+            if not path.resolve().is_relative_to(repo):
+                escaped += 1
+                continue
+            files.append(path)
+        return files, escaped
 
     try:
         if name == "read":
@@ -310,6 +400,12 @@ def _exec_tool(
             txt = p.read_text(errors="replace")
             lines = txt.splitlines()
             off = max(1, int(args.get("offset", 1) or 1))
+            if not lines:
+                return "(empty file)"
+            if off > len(lines):
+                return (
+                    f"(no lines at offset {off}; total_lines={len(lines)})"
+                )
             lim = args.get("limit")
             limit = (
                 max(1, int(lim))
@@ -336,18 +432,17 @@ def _exec_tool(
             return "\n".join(rendered) or "(empty file)"
         if name == "grep":
             pat = re.compile(args["pattern"])
-            root = (
-                repository_path(args["path"])
-                if args.get("path")
-                else repo
-            )
             mode = args.get("output_mode", "content")
-            files = [
-                path
-                for path in root.rglob(args.get("glob") or "*")
-                if path.is_file()
-                and not any(part in _IGNORED_PARTS for part in path.parts)
-            ]
+            root = repository_scope(args.get("path"))
+            if root.is_file():
+                # File-scoped search: search exactly that file (an explicit
+                # rglob on a file yields nothing — that bug hid results).
+                files = [root]
+                escaped = 0
+            else:
+                files, escaped = iter_repo_files(
+                    root, pattern=args.get("glob") or "*"
+                )
             res: list[str] = []
             total = 0
             skipped_large = 0
@@ -387,6 +482,10 @@ def _exec_tool(
                     f"[skipped {skipped_large} files larger than "
                     f"{_TOOL_FILE_SIZE_CAP} bytes]"
                 )
+            if escaped:
+                res.append(
+                    f"[skipped {escaped} symlink(s) escaping the repository]"
+                )
             output = "\n".join(res)
             if len(output) > _READ_CAP:
                 output = (
@@ -396,35 +495,24 @@ def _exec_tool(
             return output or "(no matches)"
         if name == "glob":
             pat = args["pattern"]
-            root = (
-                repository_path(args.get("path", ""))
-                if args.get("path")
-                else repo
+            root = repository_scope(args.get("path"), must_be_dir=True)
+            files, escaped = iter_repo_files(root)
+            matched = sorted(
+                {str(rel) for rel in (f.relative_to(root) for f in files)
+                 if PurePath(rel).full_match(pat)}
             )
-            base = str(root) + "/"
-            all_matches = [
-                match
-                for match in sorted(_glob.glob(base + pat, recursive=True))
-                if os.path.isfile(match)
-                and not any(
-                    part in _IGNORED_PARTS
-                    for part in Path(match).parts
-                )
-            ]
-            rel = [
-                os.path.relpath(match, repo)
-                for match in all_matches[:_GLOB_MATCH_CAP]
-            ]
-            if len(all_matches) > len(rel):
+            rel = matched[:_GLOB_MATCH_CAP]
+            if len(matched) > len(rel):
                 rel.append(
-                    f"[truncated: omitted_matches={len(all_matches) - len(rel)}]"
+                    f"[truncated: omitted_matches={len(matched) - len(rel)}]"
+                )
+            if escaped:
+                rel.append(
+                    f"[skipped {escaped} symlink(s) escaping the repository]"
                 )
             return "\n".join(rel) or "(no matches)"
         if name == "bash":
-            out = subprocess.run(
-                args["command"], shell=True, cwd=cwd, capture_output=True, text=True,
-                timeout=int(args.get("timeout", 120) or 120))
-            return (out.stdout + out.stderr)[:_READ_CAP] or "(no output)"
+            return _run_bash(args, cwd, deadline_ts=deadline_ts)
         if name == "live_probe":
             url = (live_target or {}).get("url")
             if not url:
@@ -448,15 +536,26 @@ def _exec_tool(
 
 # ---- the agent loop ---------------------------------------------------------
 
-def _consume_sse(r: Any) -> dict:
+def _consume_sse(r: Any, *, deadline_ts: float | None = None) -> dict:
     """Rebuild a non-stream chat completion from an OpenAI SSE stream.
 
     Hosted gateways (Hetzner, Cloudflare-fronted vLLM) kill idle non-streaming
     requests: the connection sits byte-silent while the model generates, hits
     the gateway's upstream timeout, and returns 504/hangs. Streaming keeps
     bytes flowing, so every chunk resets the idle timer.
+
+    P03: preserves streamed reasoning (``reasoning_content`` / ``reasoning`` /
+    ``reasoning_text`` deltas — same field set Pi reads) on the rebuilt
+    assistant message, and keeps the provider's usage payload verbatim
+    (including reasoning/cache details when supplied — never fabricated).
+
+    ``deadline_ts`` is a monotonic wall cutoff for model work (P05): a
+    continuously streaming response cannot extend it — the socket idle
+    timeout alone never bounds a stream that keeps producing bytes.
     """
     content_parts: list[str] = []
+    reasoning_parts: list[str] = []
+    reasoning_field: str | None = None
     tool_calls: dict[int, dict] = {}
     finish: str | None = None
     usage: dict = {}
@@ -467,6 +566,11 @@ def _consume_sse(r: Any) -> dict:
         stream = gzip.GzipFile(fileobj=r)
     try:
         for raw in stream:
+            if deadline_ts is not None and time.monotonic() > deadline_ts:
+                from codesec.deadline import TimeBudgetExceeded
+                raise TimeBudgetExceeded(
+                    "model-work deadline reached mid-stream"
+                )
             line = raw.decode("utf-8", "replace").strip()
             if not line.startswith("data:"):
                 continue
@@ -485,6 +589,13 @@ def _consume_sse(r: Any) -> dict:
                 delta = choice.get("delta") or {}
                 if delta.get("content"):
                     content_parts.append(delta["content"])
+                for field in REASONING_DELTA_FIELDS:
+                    value = delta.get(field)
+                    if isinstance(value, str) and value:
+                        if reasoning_field is None:
+                            reasoning_field = field
+                        reasoning_parts.append(value)
+                        break
                 for tc in delta.get("tool_calls") or []:
                     slot = tool_calls.setdefault(
                         tc.get("index", 0),
@@ -508,6 +619,9 @@ def _consume_sse(r: Any) -> dict:
         "role": "assistant",
         "content": "".join(content_parts) or None,
     }
+    if reasoning_parts:
+        message["reasoning_content"] = "".join(reasoning_parts)
+        message["reasoning_field"] = reasoning_field or REASONING_DELTA_FIELDS[0]
     if tool_calls:
         message["tool_calls"] = [
             {"id": slot["id"], "type": "function",
@@ -519,40 +633,65 @@ def _consume_sse(r: Any) -> dict:
             "usage": usage}
 
 
+def chat_completions_url(base_url: str) -> str:
+    """Join a provider root onto POST .../chat/completions.
+
+    Z.AI Coding Plan is ``.../api/coding/paas/v4`` (not ``/v1``). llama-server
+    and Unsloth are typically ``http://host:port`` or ``.../v1``.
+    """
+    endpoint = base_url.rstrip("/")
+    if endpoint.endswith("/chat/completions"):
+        return endpoint
+    if endpoint.endswith("/v1") or endpoint.endswith("/paas/v4"):
+        return endpoint + "/chat/completions"
+    return endpoint + "/v1/chat/completions"
+
+
 def _chat(base_url: str, api_key: str | None, model: str, messages: list,
           tools: list, temperature: float, max_tokens: int,
           tool_choice: str | dict | None = None,
-          thinking: bool = False,
-          context_limit: int = 262_144) -> dict:
+          reasoning: dict | None = None,
+          context_limit: int = 262_144,
+          extra_headers: dict | None = None,
+          deadline_ts: float | None = None) -> dict:
+    """One chat-completions request.
+
+    ``reasoning`` is a serialized ReasoningSpec (P03): the zai_thinking
+    protocol sends ``thinking.type=enabled`` + ``reasoning_effort`` — never
+    local llama.cpp chat-template kwargs as the hosted control.
+    """
+    spec = reasoning_from_dict(reasoning)
     _prune_messages(messages, tools, max_tokens, context_limit)
     body = {"model": model, "messages": messages, "temperature": temperature,
             "max_tokens": max_tokens, "stream": True,
-            "stream_options": {"include_usage": True},
-            "chat_template_kwargs": {"enable_thinking": thinking}}
+            "stream_options": {"include_usage": True}}
+    body.update(spec.request_params())
     if tools:
         body["tools"] = tools
     if tool_choice is not None:
         body["tool_choice"] = tool_choice
-    endpoint = base_url.rstrip("/")
-    chat_url = (
-        endpoint + "/chat/completions"
-        if endpoint.endswith("/v1")
-        else endpoint + "/v1/chat/completions"
-    )
-    req = urllib.request.Request(
-        chat_url,
-        data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json",
-                 # Hetzner's Envoy ext_proc chokes on urllib's implicit
-                 # 'Accept-Encoding: identity' over SSE (streams stall -> 504).
-                 # Advertise gzip and decompress if the server honors it.
-                 "Accept-Encoding": "gzip",
-                 # Zen front Cloudflare bans the default Python-urllib UA (error 1010)
-                 "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-                 **({"Authorization": f"Bearer {api_key}"} if api_key else {})})
+    chat_url = chat_completions_url(base_url)
+    headers = {"Content-Type": "application/json",
+               # Hetzner's Envoy ext_proc chokes on urllib's implicit
+               # 'Accept-Encoding: identity' over SSE (streams stall -> 504).
+               # Advertise gzip and decompress if the server honors it.
+               "Accept-Encoding": "gzip",
+               # Zen front Cloudflare bans the default Python-urllib UA (error 1010)
+               "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+               **({"Authorization": f"Bearer {api_key}"} if api_key else {}),
+               **(extra_headers or {})}
+    req = urllib.request.Request(chat_url, data=json.dumps(body).encode(), headers=headers)
+    # P05: socket timeout bounded by the remaining budget so a hung peer
+    # cannot outlive the run (deadline is monotonic; wall clock fallback
+    # keeps a sane bound when no deadline is set).
+    if deadline_ts is not None:
+        remaining = deadline_ts - time.monotonic()
+        timeout = max(0.001, min(1200.0, remaining + 30.0))
+    else:
+        timeout = 1200.0
     try:
-        with urllib.request.urlopen(req, timeout=1200) as r:
-            return _consume_sse(r)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return _consume_sse(r, deadline_ts=deadline_ts)
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")[:300]
         message = f"upstream {e.code}: {detail}"
@@ -584,10 +723,11 @@ def run_local_agent(
     artifact_name: str,
     temperature: float = 0.6,
     max_tokens: int = 8192,
-    thinking: bool = False,
+    reasoning: dict | None = None,
     max_input_chars: int = 50_000,
     repair_attempts: int = 1,
     context_limit: int = 262_144,
+    deadline_ts: float | None = None,
 ) -> AgentResult:
     """Drop-in local replacement for codesec.runner.run_agent."""
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -618,6 +758,16 @@ def run_local_agent(
     serialized_input = pack_user_input(
         user_input, max_chars=max_input_chars
     )
+    spec = reasoning_from_dict(reasoning)
+    # Operator tags (experiment/cell/attempt/stage) forwarded as headers so
+    # the P03 inference gateway can attribute requests without reading
+    # message content. JSON object of header-name -> value.
+    try:
+        _extra_headers = dict(
+            json.loads(os.environ.get("CODESEC_REQUEST_HEADERS", "{}"))
+        )
+    except json.JSONDecodeError:
+        _extra_headers = {}
     messages: list[dict] = [
         {"role": "system", "content": system_prompt},
         {
@@ -626,7 +776,13 @@ def run_local_agent(
         },
     ]
 
-    usage_tot = {"prompt_tokens": 0, "completion_tokens": 0, "cached": 0}
+    usage_tot = {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "cached": 0,
+        "reasoning_tokens": 0,
+        "reasoning_reported": False,
+    }
     final_text = ""
     turns = 0
     repair_used = False
@@ -650,6 +806,18 @@ def run_local_agent(
                 or 0
             )
             usage_tot["cached"] += cached
+            # P03: reasoning-token usage only where the provider supplies it
+            # (completion_tokens_details.reasoning_tokens / reasoning_tokens)
+            # — never a fabricated zero.
+            reasoning = (
+                (usage.get("completion_tokens_details") or {}).get(
+                    "reasoning_tokens"
+                )
+                or usage.get("reasoning_tokens")
+            )
+            if isinstance(reasoning, int):
+                usage_tot["reasoning_tokens"] += reasoning
+                usage_tot["reasoning_reported"] = True
 
         def _continue_json(text: str) -> str:
             nonlocal turns
@@ -682,8 +850,10 @@ def run_local_agent(
                     temperature,
                     max_tokens,
                     tool_choice="none",
-                    thinking=thinking,
+                    reasoning=reasoning,
                     context_limit=context_limit,
+                    extra_headers=_extra_headers,
+                    deadline_ts=deadline_ts,
                 )
                 _w({"kind": "continue_response", "response": response})
                 _accumulate_usage(response)
@@ -702,7 +872,15 @@ def run_local_agent(
             return text
 
         _w({"kind": "meta", "engine": "local", "stage": stage, "model": model,
-            "base_url": base_url, "started_at": started})
+            "base_url": base_url, "started_at": started,
+            "effective_request": effective_request_settings(
+                model=model,
+                reasoning=spec,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                context_limit=context_limit,
+                stream=True,
+            )})
         artifact_input = json.dumps(
             _redact_artifact_input(user_input),
             ensure_ascii=False,
@@ -731,8 +909,10 @@ def run_local_agent(
                     tools,
                     temperature,
                     max_tokens,
-                    thinking=thinking,
+                    reasoning=reasoning,
                     context_limit=context_limit,
+                    extra_headers=_extra_headers,
+                    deadline_ts=deadline_ts,
                 )
             except RuntimeError as e:
                 _w({"kind": "api_error", "error": str(e)})
@@ -758,6 +938,12 @@ def run_local_agent(
                                   "arguments": _sanitize_tool_args(
                                       tc["function"]["arguments"])}}
                     for tc in tool_calls]
+            # P03: serialize streamed reasoning back onto the assistant
+            # history message (including tool-call turns) per the protocol's
+            # history policy — Pi-compatible reasoning_content transport.
+            asst = spec.serialize_history(
+                asst, msg.get("reasoning_content") or ""
+            )
             messages.append(asst)
 
             if not tool_calls:
@@ -769,7 +955,8 @@ def run_local_agent(
                 try:
                     args = _decode_tool_arguments(tc["function"]["arguments"])
                     result = _exec_tool(fn, args, cwd, repo_root=repo_root,
-                                    live_target=live_target)
+                                    live_target=live_target,
+                                    deadline_ts=deadline_ts)
                 except ToolArgumentError as error:
                     args = {}
                     result = json.dumps(
@@ -802,8 +989,10 @@ def run_local_agent(
             # preventing a repair response from invoking one.
             turns += 1
             resp = _chat(base_url, api_key, model, messages, tools, temperature,
-                         max_tokens, tool_choice="none", thinking=thinking,
-                         context_limit=context_limit)
+                         max_tokens, tool_choice="none", reasoning=reasoning,
+                         context_limit=context_limit,
+                         extra_headers=_extra_headers,
+                         deadline_ts=deadline_ts)
             _w({"kind": "repair_response", "response": resp})
             _accumulate_usage(resp)
             msg = (resp.get("choices") or [{}])[0].get("message", {})
@@ -927,9 +1116,13 @@ def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
     (attack_class/priority/...) alongside findings; strip those extras and
     default missing arrays so additionalProperties:false accepts the payload.
     """
+    name = schema_file.name
+    if isinstance(payload, list) and name.startswith("recon"):
+        payload = {
+            "subsystems": [item for item in payload if isinstance(item, dict)]
+        }
     if not isinstance(payload, dict):
         return payload
-    name = schema_file.name
     out = dict(payload)
 
     # Hunt output / finding.schema.json
@@ -1257,7 +1450,52 @@ def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
             if tbs:
                 arch["trust_boundaries"] = tbs
             out["architecture"] = arch
-        # subsystems: cannot invent — leave for validator
+        # GLM-5.3 often emits a bare subsystem list and never repairs into
+        # architecture/initial_tasks. Seed the minimum valid object so one
+        # bad recon shape does not abort the whole trial.
+        if name.startswith("recon"):
+            subs = [s for s in (out.get("subsystems") or []) if isinstance(s, dict)]
+            tasks = out.get("initial_tasks")
+            bare_list = not isinstance(tasks, list) or not tasks
+            # Only seed when recon emitted subsystems with no hunt tasks
+            # (typical GLM-5.3 bare array). If tasks exist but architecture
+            # does not, leave it for a repair turn.
+            if subs and bare_list and not isinstance(out.get("architecture"), dict):
+                loc = str(subs[0].get("path") or "app.py")
+                out["architecture"] = {
+                    "build_commands": [],
+                    "entry_points": [{"kind": "http_route", "location": loc}],
+                    "trust_boundaries": [
+                        {
+                            "name": "http_to_app",
+                            "description": "Recon omitted architecture; default HTTP-to-app boundary.",
+                        }
+                    ],
+                }
+            if subs and bare_list:
+                seeded = []
+                for i, sub in enumerate(subs[:20]):
+                    path = str(sub.get("path") or ".")
+                    purpose = str(sub.get("purpose") or sub.get("name") or "component")
+                    hint = f"Review {path} for injection and auth issues. {purpose}"
+                    if len(hint) < 10:
+                        hint = f"Review {path} for security issues in this subsystem"
+                    seeded.append(
+                        {
+                            "task_id": f"t-recon-seed-{i+1}",
+                            "attack_class": "injection",
+                            "scope_hint": hint[:500],
+                            "target_files": [path],
+                            "rationale": (
+                                f"Seeded because recon listed subsystem "
+                                f"{sub.get('name') or path} without hunt tasks."
+                            ),
+                            "priority": 3,
+                            "source": "recon",
+                        }
+                    )
+                if seeded:
+                    out["initial_tasks"] = seeded
     return out
 
 

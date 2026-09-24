@@ -98,6 +98,10 @@ TRACE_UNCERTAIN_OK = {
     "reachable": None,
     "confidence": 0.2,
     "rationale": "The sink exists, but callers are registered dynamically outside the repository.",
+    "uncertainty": {
+        "kind": "source_evidence",
+        "reason_code": "framework_boundary_unresolved",
+    },
     "blockers": [
         {
             "kind": "other",

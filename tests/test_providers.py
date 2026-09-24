@@ -14,6 +14,8 @@ from codesec.providers import (
     ProviderError,
     apply_provider_env,
     get_provider,
+    local_base_url,
+    resolve_key,
     role_model,
 )
 
@@ -46,9 +48,28 @@ def test_provider_registry_has_expected_names():
 def test_zai_preset_speaks_anthropic_api():
     p = get_provider("zai")
     assert p.base_url == "https://api.z.ai/api/anthropic"
+    assert p.openai_base_url == "https://api.z.ai/api/coding/paas/v4"
     assert p.opus_role_model == "glm-5.2"
     assert p.sonnet_role_model == "glm-4.7"
     assert "ZAI_API_KEY" in p.key_env_vars
+
+
+def test_zai_local_base_url_is_coding_paas():
+    p = get_provider("zai")
+    assert local_base_url(p) == "https://api.z.ai/api/coding/paas/v4"
+
+
+def test_configure_auth_zai_does_not_need_claude(monkeypatch, tmp_path):
+    monkeypatch.setattr(auth_mod, "find_claude_cli", lambda: None)
+    for v in ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",
+              "ZAI_API_KEY", "CODESEC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"):
+        monkeypatch.delenv(v, raising=False)
+    status = configure_auth(
+        _empty_env(tmp_path), provider="zai", provider_api_key="zai-secret",
+    )
+    assert status.auth_mode == "gateway"
+    assert status.provider == "zai"
+    assert status.claude_cli_path is None
 
 
 def test_unsloth_preset_defaults_to_local_port():

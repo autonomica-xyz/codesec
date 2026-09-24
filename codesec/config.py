@@ -25,6 +25,33 @@ class ModelProfile:
     model_path_env: str | None = None
     expected_sha256: str | None = None
     server_args: tuple[str, ...] = ()
+    # P03 provider-aware reasoning controls. Defaults (protocol=none,
+    # enabled=False) preserve the historical local behavior; a legacy
+    # `thinking: true` still maps to the llama chat-template kwarg.
+    reasoning_protocol: str = "none"
+    reasoning_enabled: bool = False
+    reasoning_effort: str | None = None
+    reasoning_history: str = "preserve"
+
+    def reasoning_spec(self):
+        """Resolve the effective ReasoningSpec for this profile.
+
+        An explicit protocol wins; a bare legacy `thinking: true` (local
+        llama.cpp servers) maps to the chat-template protocol so old
+        configs keep working while hosted protocols must be explicit."""
+        from codesec.reasoning import ReasoningSpec
+
+        protocol = self.reasoning_protocol
+        if protocol == "none" and self.thinking:
+            protocol = "llama_chat_template"
+        return ReasoningSpec(
+            protocol=protocol,
+            enabled=self.reasoning_enabled or (
+                self.thinking and protocol == "llama_chat_template"
+            ),
+            effort=self.reasoning_effort,
+            history=self.reasoning_history,
+        )
 
 
 def _classify_role(model: str) -> str:
@@ -60,12 +87,41 @@ class StageConfig:
     options: dict = field(default_factory=dict)
 
 
+# Report membership policies (P02): which confirmed canonical findings the
+# shipped report.json represents. confirmed_all is the historical default.
+REPORT_POLICIES = (
+    "confirmed_all",
+    "confirmed_reachable",
+    "confirmed_except_unreachable",
+)
+# Report renderers: "agent" keeps the historical LLM report writer with
+# deterministic reconciliation; "deterministic" renders straight from the
+# authoritative DB (zero model calls).
+REPORT_RENDERERS = ("agent", "deterministic")
+
+
 @dataclass
 class HarnessConfig:
     stages: dict[str, StageConfig] = field(default_factory=dict)
     model_profiles: dict[str, ModelProfile] = field(default_factory=dict)
     gapfill_iterations: int = 2
     feedback_iterations: int = 1
+    # Effective report settings (P02). Defaults preserve the historical
+    # product behavior outside experiments that select otherwise.
+    report_policy: str = "confirmed_all"
+    report_renderer: str = "agent"
+
+    def __post_init__(self) -> None:
+        if self.report_policy not in REPORT_POLICIES:
+            raise ValueError(
+                f"unknown report_policy {self.report_policy!r}; "
+                f"expected one of {REPORT_POLICIES}"
+            )
+        if self.report_renderer not in REPORT_RENDERERS:
+            raise ValueError(
+                f"unknown report_renderer {self.report_renderer!r}; "
+                f"expected one of {REPORT_RENDERERS}"
+            )
 
     def get(self, stage: str) -> StageConfig:
         try:
@@ -139,6 +195,10 @@ def load_config(path: Path | None = None) -> HarnessConfig:
             model_path_env=spec.get("model_path_env"),
             expected_sha256=spec.get("expected_sha256"),
             server_args=tuple(str(arg) for arg in spec.get("server_args", [])),
+            reasoning_protocol=str(spec.get("reasoning_protocol", "none")),
+            reasoning_enabled=bool(spec.get("reasoning_enabled", False)),
+            reasoning_effort=spec.get("reasoning_effort"),
+            reasoning_history=str(spec.get("reasoning_history", "preserve")),
         )
         for name, spec in (raw.get("model_profiles") or {}).items()
     }
@@ -183,4 +243,6 @@ def load_config(path: Path | None = None) -> HarnessConfig:
         model_profiles=profiles,
         gapfill_iterations=int(loops.get("gapfill_iterations", 2)),
         feedback_iterations=int(loops.get("feedback_iterations", 1)),
+        report_policy=str(raw.get("report_policy", "confirmed_all")),
+        report_renderer=str(raw.get("report_renderer", "agent")),
     )

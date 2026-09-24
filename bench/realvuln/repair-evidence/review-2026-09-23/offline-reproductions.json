@@ -1,0 +1,26 @@
+{
+  "freeze_without_any_preflight_or_model_or_image": 0,
+  "primary_after_failed_no_output_then_success": "second",
+  "arm_done_accepts_no_artifact_and_wrong_repo": true,
+  "previous_valid_pi_snapshot_after_truncated_overwrite": "AdapterInputError",
+  "valid_h_checkpoint_without_final_report": "FileNotFoundError",
+  "missing_decoy_and_alternative_locations": {
+    "checked": 1,
+    "problems": []
+  },
+  "aggregate_committed_but_invalidated_or_no_ledger": {
+    "headline_present": true,
+    "problems": []
+  },
+  "live_preflight_with_mocked_offline_dependencies": {
+    "passed": true,
+    "live_gates": [],
+    "image_gate": [
+      "passed"
+    ]
+  },
+  "second_dedupe_existing_test_passes_but_group_gaps": [
+    "group g_reused has no canonical finding"
+  ],
+  "gateway_accepts_top_p_and_changed_history": true
+}

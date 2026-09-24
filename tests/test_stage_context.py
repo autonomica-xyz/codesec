@@ -16,31 +16,44 @@ def _ctx(**kwargs) -> StageContext:
     return StageContext(run_id="r", repo_path=Path("/tmp"), config=cfg, **kwargs)
 
 
-def test_extras_empty_when_nothing_set() -> None:
-    assert _ctx().extras() == {}
+def test_extras_static_mode_is_explicit() -> None:
+    """P04: static inputs always carry evidence_mode and explicit nulls so
+    a prompt template example can never be mistaken for a real target."""
+    e = _ctx().extras()
+    assert e == {
+        "evidence_mode": "static",
+        "live_target": None,
+        "markers": None,
+    }
 
 
 def test_extras_includes_live_target() -> None:
     lt = {"url": "http://x:8080", "credentials": {"email": "a", "password": "b"}}
     e = _ctx(live_target=lt).extras()
-    assert e == {"live_target": lt}
+    assert e == {"evidence_mode": "live", "live_target": lt}
+    assert "markers" not in e or e.get("markers") is None
 
 
 def test_extras_includes_scope_notes() -> None:
     e = _ctx(scope_notes="Mailpit is out of scope.").extras()
-    assert e == {"scope_notes": "Mailpit is out of scope."}
+    assert e["scope_notes"] == "Mailpit is out of scope."
+    assert e["evidence_mode"] == "static"
 
 
 def test_extras_includes_both() -> None:
     lt = {"url": "http://x:8080", "credentials": {}}
     e = _ctx(live_target=lt, scope_notes="notes").extras()
     assert "live_target" in e and "scope_notes" in e
+    assert e["evidence_mode"] == "live"
 
 
 def test_extras_skips_falsy_values() -> None:
-    # empty dict / empty string should also be skipped (no point passing noise)
-    assert _ctx(live_target={}).extras() == {}
-    assert _ctx(scope_notes="").extras() == {}
+    # empty dict / empty string degrade to static mode without noise
+    assert _ctx(live_target={}).extras() == {
+        "evidence_mode": "static", "live_target": None, "markers": None,
+    }
+    e = _ctx(scope_notes="").extras()
+    assert "scope_notes" not in e
 
 
 def test_explicit_run_paths_do_not_write_to_global_results(tmp_path: Path) -> None:

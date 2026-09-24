@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from codesec import auth as auth_mod
-from codesec.auth import AuthError, configure_auth
+from codesec.auth import AuthError, configure_auth, find_claude_cli
 
 
 def _empty_env(tmp_path: Path) -> Path:
@@ -58,9 +58,18 @@ def test_missing_everything_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
 
 def test_missing_claude_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "fake-test-token")
-    monkeypatch.setenv("PATH", "/nonexistent")
+    monkeypatch.setattr(auth_mod, "find_claude_cli", lambda: None)
     with pytest.raises(AuthError, match="claude.*CLI"):
         configure_auth(env_file=_empty_env(tmp_path))
+
+
+def test_find_claude_cli_falls_back_to_bundled_sdk_binary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    path = find_claude_cli()
+    assert path is not None
+    assert path.endswith("/_bundled/claude")
 
 
 # ---------- default behavior (allow_api_key=False, preserves upstream) ----------

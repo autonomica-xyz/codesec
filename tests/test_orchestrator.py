@@ -420,22 +420,29 @@ async def test_max_hours_closing_mode_skips_breadth_but_reports(
     monkeypatch.setattr(orchestrator.stages, "run_feedback", track("feedback"))
     monkeypatch.setattr(orchestrator.stages, "run_report", report)
 
-    # A microscopically small budget: _closing() is true immediately, so
-    # gapfill and feedback must be skipped while dedupe/trace/report run.
-    report_path = await orchestrator.run_pipeline(
-        repo_path=tmp_path,
-        run_id="run",
-        db=db,
-        config=HarnessConfig(gapfill_iterations=2, feedback_iterations=2),
-        max_hours=1e-9,
-    )
+    # A microscopically small budget is immediately exhausted: under P05
+    # semantics ALL model work stops, breadth is never admitted, and the
+    # pipeline finishes budget_limited with a deterministic checkpoint.
+    from codesec.orchestrator import TimeBudgetExceededPipeline
 
-    assert report_path == tmp_path / "report.json"
+    with pytest.raises(TimeBudgetExceededPipeline):
+        await orchestrator.run_pipeline(
+            repo_path=tmp_path,
+            run_id="run",
+            db=db,
+            config=HarnessConfig(gapfill_iterations=2, feedback_iterations=2),
+            max_hours=1e-9,
+            run_results_root=tmp_path / "results",
+            run_work_root=tmp_path / "work",
+        )
+
     assert "gapfill" not in calls
     assert "feedback" not in calls
-    assert calls.count("hunt") == 1  # first wave only, no feedback hunts
-    assert "report" in calls
-    assert db.get_run("run")["status"] == "completed"
+    assert "hunt" not in calls
+    status = db.get_run("run")["status"] if db.get_run("run") else None
+    assert status == "budget_limited"
+    # The deterministic checkpoint snapshot exists (atomic, zero model calls).
+    assert (tmp_path / "results" / "report" / "report.checkpoint.json").exists()
 
 
 async def test_no_max_hours_runs_full_loop(

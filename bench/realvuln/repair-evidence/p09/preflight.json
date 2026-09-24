@@ -1,0 +1,133 @@
+{
+  "ran_at": 1790097438.560525,
+  "mode": "offline",
+  "gates": [
+    {
+      "name": "p01_blinded_tree_tools",
+      "status": "passed",
+      "detail": "...........................................                              [100%]\n43 passed in 0.79s\n",
+      "evidence": "pytest -q tests/test_local_agent.py"
+    },
+    {
+      "name": "p02_dedupe_payload_bounds",
+      "status": "passed",
+      "detail": "............                                                             [100%]\n12 passed in 29.11s\n",
+      "evidence": "pytest -q tests/test_dedupe_stage.py"
+    },
+    {
+      "name": "p02_report_membership",
+      "status": "passed",
+      "detail": "..............                                                           [100%]\n14 passed in 7.28s\n",
+      "evidence": "pytest -q tests/test_report_stage.py"
+    },
+    {
+      "name": "p02_state_membership",
+      "status": "passed",
+      "detail": ".................                                                        [100%]\n17 passed in 5.73s\n",
+      "evidence": "pytest -q tests/test_state.py"
+    },
+    {
+      "name": "p03_gateway_enforcement",
+      "status": "passed",
+      "detail": "...........                                                              [100%]\n11 passed in 7.05s\n",
+      "evidence": "pytest -q tests/test_realvuln_gateway.py"
+    },
+    {
+      "name": "p03_pi_wire_parity",
+      "status": "passed",
+      "detail": ".                                                                        [100%]\n1 passed in 0.79s\n",
+      "evidence": "pytest -q tests/test_realvuln_pi_parity.py"
+    },
+    {
+      "name": "p04_trace_contracts",
+      "status": "passed",
+      "detail": ".....................                                                    [100%]\n21 passed in 4.28s\n",
+      "evidence": "pytest -q tests/test_trace_stage.py"
+    },
+    {
+      "name": "p04_contracts",
+      "status": "passed",
+      "detail": ".................                                                        [100%]\n17 passed in 0.01s\n",
+      "evidence": "pytest -q tests/test_contracts.py"
+    },
+    {
+      "name": "p05_deadlines",
+      "status": "passed",
+      "detail": "..............                                                           [100%]\n14 passed in 37.02s\n",
+      "evidence": "pytest -q tests/test_benchmark_deadlines.py"
+    },
+    {
+      "name": "p05_snapshot_retention",
+      "status": "passed",
+      "detail": ".....                                                                    [100%]\n5 passed in 0.02s\n",
+      "evidence": "pytest -q tests/test_realvuln_snapshot.py"
+    },
+    {
+      "name": "p05_orchestrator_stage_health",
+      "status": "passed",
+      "detail": ".......                                                                  [100%]\n7 passed in 3.00s\n",
+      "evidence": "pytest -q tests/test_orchestrator.py"
+    },
+    {
+      "name": "p06_isolation_corpus",
+      "status": "passed",
+      "detail": "............                                                             [100%]\n12 passed in 6.73s\n",
+      "evidence": "pytest -q tests/test_realvuln_isolation.py"
+    },
+    {
+      "name": "p07_ledger",
+      "status": "passed",
+      "detail": ".......                                                                  [100%]\n7 passed in 0.23s\n",
+      "evidence": "pytest -q tests/test_realvuln_ledger.py"
+    },
+    {
+      "name": "p07_manifest_commit",
+      "status": "passed",
+      "detail": ".............                                                            [100%]\n13 passed in 0.53s\n",
+      "evidence": "pytest -q tests/test_realvuln_manifest.py"
+    },
+    {
+      "name": "p07_adapter",
+      "status": "passed",
+      "detail": "...........                                                              [100%]\n11 passed in 0.01s\n",
+      "evidence": "pytest -q tests/test_realvuln_adapter.py"
+    },
+    {
+      "name": "p08_aggregation",
+      "status": "passed",
+      "detail": "............                                                             [100%]\n12 passed in 0.23s\n",
+      "evidence": "pytest -q tests/test_realvuln_aggregate.py"
+    },
+    {
+      "name": "source_pins",
+      "status": "passed",
+      "detail": "HEAD=7a710251f55c untracked=34",
+      "evidence": "/home/user/g/Real-Vuln-Benchmark"
+    },
+    {
+      "name": "effective_request_shape",
+      "status": "passed",
+      "detail": "fingerprint=cf9d42d2da75e9eb\u2026",
+      "evidence": ""
+    },
+    {
+      "name": "isolation_image",
+      "status": "passed",
+      "detail": "image=sha256:671c2b979882\u2026 pi=0.85.1",
+      "evidence": "/home/user/g/codesec/bench/realvuln-runs/image-build.json"
+    },
+    {
+      "name": "experiment_freeze_machinery",
+      "status": "passed",
+      "detail": "",
+      "evidence": "/tmp/tmpkd0f4k6b/synthetic-exp/operator/manifest.json"
+    },
+    {
+      "name": "live_gateway_parity_probe",
+      "status": "not_run",
+      "detail": "offline preflight; run with --live during P10 calibration",
+      "evidence": ""
+    }
+  ],
+  "passed": false
+}

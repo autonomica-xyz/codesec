@@ -1,0 +1,14 @@
+{
+  "aggregate_cli_exit": 2,
+  "aggregate_cli_stderr": "usage: aggregate.py [-h] [--realvuln REALVULN] [--subset SUBSET]\n                    [--json-out JSON_OUT] [--tag TAG]\naggregate.py: error: unrecognized arguments: --experiment bench/realvuln-runs/experiments/calib-smoke-20260922-02\n",
+  "spec_image": "sha256:98f6b85e8acb172ba33543f318e59df3517d98030c717b74f430b03ac0abc4c3",
+  "current_image": "sha256:ee12a801d1716bd39954bc8f685c4f37d675ccf8d377b7225ce68a2ed2cb626d",
+  "gateway_request_count": 448,
+  "gateway_tag_counts": {
+    "experiment_id": 0,
+    "cell_id": 0,
+    "attempt_id": 0,
+    "arm": 0,
+    "stage": 0
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "realvuln_git_sha": "7a710251f55c17d32d3adcb13d37468e2e3b9e4a",
+  "smoke": {
+    "realvuln-intentionally-vulnerable-python-application": {
+      "vulns": 7,
+      "traps": 2,
+      "non_scoring": 0,
+      "commit_sha": "3804a18ae666b296675f9a60bc617e527beae520",
+      "benchmark_version": "3.0.0"
+    }
+  },
+  "wave1": {
+    "realvuln-vampi": {
+      "vulns": 15,
+      "traps": 4,
+      "non_scoring": 0,
+      "commit_sha": "1713b54b601ad29582581eeda4b31fceb1319874",
+      "benchmark_version": "3.0.0"
+    },
+    "realvuln-damn-vulnerable-flask-application": {
+      "vulns": 14,
+      "traps": 5,
+      "non_scoring": 0,
+      "commit_sha": "55f63201c85190e760a8fa34a580a9bf918dbf36",
+      "benchmark_version": "3.0.0"
+    },
+    "realvuln-python-insecure-app": {
+      "vulns": 8,
+      "traps": 2,
+      "non_scoring": 0,
+      "commit_sha": "80b894a2f754590747a31c92b2088be086421953",
+      "benchmark_version": "3.0.0"
+    },
+    "realvuln-dvpwa": {
+      "vulns": 23,
+      "traps": 4,
+      "non_scoring": 0,
+      "commit_sha": "a1d8f89fac2e57093189853c6527c2b01fc1d9c1",
+      "benchmark_version": "3.0.0"
+    },
+    "realvuln-lets-be-bad-guys": {
+      "vulns": 24,
+      "traps": 4,
+      "non_scoring": 0,
+      "commit_sha": "7cbf11014bfc6dc9e199dc0b8a64e4597bc2338f",
+      "benchmark_version": "3.0.0"
+    },
+    "realvuln-pygoat": {
+      "vulns": 78,
+      "traps": 10,
+      "non_scoring": 0,
+      "commit_sha": "2fb0c600245f50670e8b9233c784afe61e8b340b",
+      "benchmark_version": "3.0.0"
+    }
+  },
+  "wave1_totals": {
+    "vulns": 162,
+    "traps": 29,
+    "non_scoring": 0
+  }
+}

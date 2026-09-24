@@ -42,6 +42,8 @@ from codesec.json_utils import extract_json, validate_schema
 if TYPE_CHECKING:
     from codesec.config import ModelProfile
 
+from codesec.reasoning import reasoning_from_dict, spec_to_dict
+
 log = logging.getLogger(__name__)
 
 
@@ -186,8 +188,13 @@ async def run_agent(
     repair_attempts: int = 1,
     transient_retries: int = 3,
     transient_base_delay: float = 30.0,
+    deadline: "object | None" = None,
 ) -> AgentResult:
     """Run one agent, retrying transient API errors with exponential backoff.
+
+    ``deadline`` (codesec.deadline.Deadline, P05) bounds every request,
+    tool call and backoff sleep; retries never restart after budget
+    exhaustion (TimeBudgetExceeded propagates instead).
 
     Raises `QuotaExhaustedError` if the subscription is out of quota
     (caller should abort the run). Raises `TransientAgentError` if all
@@ -195,12 +202,30 @@ async def run_agent(
     produced parseable output that doesn't match the schema even after
     repair turns.
     """
+    from codesec.deadline import TimeBudgetExceeded
+
+    if deadline is not None:
+        deadline.check(f"{stage}/{artifact_name}")
     async def _once(attempt: int) -> AgentResult:
         attempt_artifact_name = (
             artifact_name if attempt == 0 else f"{artifact_name}.retry-{attempt + 1}"
         )
         effective_engine = profile.engine if profile is not None else _ENGINE
         effective_model = profile.model if profile is not None else model
+        if (
+            profile is not None
+            and model
+            and profile.model != model
+        ):
+            # P03: a stage label says one model while the attached profile
+            # silently overrides the actual request with another. Fail loudly
+            # instead of logging the wrong model name.
+            raise ValueError(
+                f"model conflict for stage {stage!r}: stage config says "
+                f"{model!r} but attached profile {profile.name!r} would "
+                f"send {profile.model!r}. Fix the stage config/profile "
+                f"routing before running."
+            )
         if effective_engine in {"local", "local_openai"}:
             # Direct local-LLM path: no SDK, no subprocess. The tool loop,
             # schema validation and artifact writing all live in
@@ -237,12 +262,22 @@ async def run_agent(
                     if profile is not None
                     else int(os.environ.get("CODESEC_MAX_TOKENS", "32768"))
                 ),
-                thinking=profile.thinking if profile is not None else False,
+                reasoning=(
+                    spec_to_dict(profile.reasoning_spec())
+                    if profile is not None
+                    else None
+                ),
                 max_input_chars=(
                     profile.max_input_chars if profile is not None else 50_000
                 ),
                 context_limit=(
                     profile.context_limit if profile is not None else 262_144
+                ),
+                deadline_ts=(
+                    # The model-work cutoff (not the run's absolute end):
+                    # the final snapshot reserve is never spent streaming.
+                    deadline.snapshot_deadline()
+                    if deadline is not None else None
                 ),
             )
         if profile is not None:
@@ -271,6 +306,8 @@ async def run_agent(
             return await _once(attempt)
         except QuotaExhaustedError:
             raise
+        except TimeBudgetExceeded:
+            raise
         except TransientAgentError as e:
             last_exc = e
             if attempt >= transient_retries:
@@ -281,7 +318,12 @@ async def run_agent(
                 stage, artifact_name, attempt + 1, transient_retries + 1,
                 str(e)[:160], delay,
             )
-            await asyncio.sleep(delay)
+            if deadline is not None:
+                # Never sleep past the deadline, and never restart a
+                # request after budget exhaustion.
+                await deadline.sleep(delay)
+            else:
+                await asyncio.sleep(delay)
     assert last_exc is not None
     raise last_exc
 

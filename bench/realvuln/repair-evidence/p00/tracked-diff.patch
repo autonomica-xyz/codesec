@@ -1,0 +1,1247 @@
+diff --git a/.gitignore b/.gitignore
+index 6278df5..1df7fef 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -9,6 +9,7 @@ work/
+ results/
+ runs/
+ runlogs/
++bench/realvuln-runs/
+ *.out
+ *.log
+ *.pid
+diff --git a/codesec/auth.py b/codesec/auth.py
+index 452735d..fad9e1f 100644
+--- a/codesec/auth.py
++++ b/codesec/auth.py
+@@ -77,6 +77,26 @@ class AuthError(RuntimeError):
+ CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
+ 
+ 
++def find_claude_cli() -> str | None:
++    """Locate Claude Code CLI the same way the Agent SDK does.
++
++    PATH ``claude`` is optional: ``claude-agent-sdk`` ships a bundled
++    binary under ``_bundled/claude``. Requiring PATH-only blocked Z.AI /
++    gateway runs on machines that never installed Claude Code globally.
++    """
++    on_path = shutil.which("claude")
++    if on_path:
++        return on_path
++    try:
++        import claude_agent_sdk
++        bundled = Path(claude_agent_sdk.__file__).resolve().parent / "_bundled" / "claude"
++        if bundled.is_file() and os.access(bundled, os.X_OK):
++            return str(bundled)
++    except Exception:
++        pass
++    return None
++
++
+ def _is_gateway_base(url: str) -> bool:
+     """A non-empty BASE_URL that doesn't point at canonical Anthropic
+     counts as 'gateway mode'."""
+@@ -118,17 +138,12 @@ def configure_auth(
+     else:
+         load_dotenv()
+ 
+-    cli_path = shutil.which("claude")
+-    if cli_path is None:
+-        raise AuthError(
+-            "`claude` CLI not found on PATH. Install Claude Code first: "
+-            "https://code.claude.com/docs/en/setup"
+-        )
+-
+     # Provider preset front-end: populate the gateway env vars before the
+     # generic mode selection runs, so a non-anthropic provider just flows
+     # through the existing gateway branch. (codesec.providers applies the
+     # base URL + a resolved API key and scrubs ANTHROPIC_API_KEY.)
++    # Do this *before* the CLI probe so a missing ZAI_API_KEY is the
++    # error you see, not a red herring about `claude` on PATH.
+     provider_active = False
+     if provider != "anthropic":
+         from codesec.providers import ProviderError, apply_provider_env, get_provider
+@@ -141,6 +156,21 @@ def configure_auth(
+         except ProviderError as e:
+             raise AuthError(str(e)) from None
+ 
++    # Z.AI / Unsloth / any preset gateway does not use Claude Code.
++    # Only the default Anthropic SDK path needs a `claude` binary.
++    cli_path = None
++    if not provider_active:
++        cli_path = find_claude_cli()
++        if cli_path is None:
++            raise AuthError(
++                "`claude` CLI not found (not on PATH, and no bundled binary in "
++                "claude-agent-sdk). Install Claude Code "
++                "(https://code.claude.com/docs/en/setup) or reinstall "
++                "`claude-agent-sdk` with its bundled CLI. "
++                "Z.AI / Unsloth do not need Claude: "
++                "`codesec auth-check --provider zai`."
++            )
++
+     api_key_was_set = "ANTHROPIC_API_KEY" in os.environ
+     base_url = os.environ.get("ANTHROPIC_BASE_URL", "")
+     auth_token = os.environ.get("ANTHROPIC_AUTH_TOKEN", "").strip()
+@@ -212,14 +242,15 @@ def configure_auth(
+             )
+ 
+     cli_version: str | None = None
+-    try:
+-        out = subprocess.run(
+-            [cli_path, "--version"], capture_output=True, text=True, timeout=10
+-        )
+-        if out.returncode == 0:
+-            cli_version = out.stdout.strip()
+-    except (subprocess.SubprocessError, OSError):
+-        pass
++    if cli_path:
++        try:
++            out = subprocess.run(
++                [cli_path, "--version"], capture_output=True, text=True, timeout=10
++            )
++            if out.returncode == 0:
++                cli_version = out.stdout.strip()
++        except (subprocess.SubprocessError, OSError):
++            pass
+ 
+     return AuthStatus(
+         auth_mode=mode,
+diff --git a/codesec/cli.py b/codesec/cli.py
+index 1eadcb8..a402a35 100644
+--- a/codesec/cli.py
++++ b/codesec/cli.py
+@@ -136,6 +136,9 @@ def auth_check(provider: str, provider_api_key: str | None,
+         console.print(f"[green]OK[/green] {label}")
+     if status.provider != "anthropic":
+         console.print(f"          provider={status.provider}")
++        from codesec.providers import get_provider, local_base_url
++        console.print(f"          openai_base={local_base_url(get_provider(status.provider))}")
++        console.print("          engine=local (no Claude CLI)")
+     if status.gateway_model:
+         console.print(f"          ANTHROPIC_MODEL={status.gateway_model}")
+     if status.api_key_scrubbed:
+@@ -144,7 +147,8 @@ def auth_check(provider: str, provider_api_key: str | None,
+     if status.auth_token_scrubbed:
+         console.print("[yellow]scrubbed[/yellow] ANTHROPIC_AUTH_TOKEN removed from env "
+                       "(no gateway base URL set — leaving it would outrank subscription)")
+-    console.print(f"claude CLI: {status.claude_cli_path} ({status.claude_cli_version})")
++    if status.claude_cli_path:
++        console.print(f"claude CLI: {status.claude_cli_path} ({status.claude_cli_version})")
+ 
+ 
+ @main.command("unsloth-proxy")
+@@ -243,13 +247,10 @@ def providers() -> None:
+               envvar="CODESEC_LLAMA_SERVER", show_default=True,
+               help="llama.cpp server binary used by --runtime managed.")
+ @_provider_options
+-@click.option("--engine", type=click.Choice(["sdk", "local"]), default="sdk",
+-              show_default=True,
+-              help="Agent engine. 'sdk' = Claude Code Agent SDK (default). "
+-                   "'local' = direct OpenAI-compatible client to a llama-server "
+-                   "/v1/chat/completions endpoint (run-qwopus.sh / Unsloth) — "
+-                   "no subprocess, no claude login, KV-cache-friendly multi-turn. "
+-                   "Use with --base-url / --model.")
++@click.option("--engine", type=click.Choice(["sdk", "local"]), default=None,
++              help="Agent engine. Default: local (OpenAI chat completions, no "
++                   "Claude CLI) for --provider zai/unsloth; sdk (Claude Code) "
++                   "for anthropic. Pass --engine sdk to force Claude Code.")
+ @click.option("--allow-api-key", is_flag=True, default=False,
+               help="Honor ANTHROPIC_API_KEY for metered Anthropic billing "
+                    "(also via CODESEC_ALLOW_API_KEY=1).")
+@@ -262,7 +263,7 @@ def run(repo: str, run_id: str | None, resume: bool, max_cost_usd: float | None,
+         runtime_mode: str | None, llama_server: str,
+         provider: str, provider_api_key: str | None,
+         provider_base_url: str | None, model: str | None,
+-        engine: str, allow_api_key: bool) -> None:
++        engine: str | None, allow_api_key: bool) -> None:
+     """Run the full 8-stage pipeline against a target repo."""
+     from codesec import runner
+ 
+@@ -276,6 +277,9 @@ def run(repo: str, run_id: str | None, resume: bool, max_cost_usd: float | None,
+         stage.profile is not None for stage in config.stages.values()
+     )
+ 
++    if engine is None:
++        engine = "local" if provider in {"zai", "unsloth"} else "sdk"
++
+     if profile_routed:
+         if model:
+             raise click.UsageError(
+@@ -285,13 +289,17 @@ def run(repo: str, run_id: str | None, resume: bool, max_cost_usd: float | None,
+             "[cyan]engine:[/cyan] request-scoped local model profiles"
+         )
+     elif engine == "local":
+-        # Direct local-LLM path: skip Claude Code auth entirely. Point at a
+-        # llama-server /v1/chat/completions endpoint (run-qwopus.sh :8080,
+-        # Unsloth :8888, etc.). Resolve base URL + key the same way providers do.
+-        base = (provider_base_url or os.environ.get("CODESEC_BASE_URL")
+-                or os.environ.get("ANTHROPIC_BASE_URL") or "http://localhost:8080")
+-        key = (provider_api_key or os.environ.get("CODESEC_API_KEY")
+-               or os.environ.get("UNSLOTH_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
++        # Direct OpenAI-compat path: skip Claude Code entirely.
++        from codesec.providers import get_provider, local_base_url, resolve_key
++        prov = get_provider(provider)
++        base = local_base_url(prov, provider_base_url)
++        key = resolve_key(prov, provider_api_key)
++        if provider != "anthropic" and not key:
++            console.print(
++                f"[red]auth error:[/red] No API key for provider {provider!r}. "
++                f"Set one of {list(prov.key_env_vars)} or pass --api-key."
++            )
++            sys.exit(2)
+         if not model:
+             console.print("[red]--engine local requires --model[/red] "
+                           "(the model id / GGUF alias the server reports)")
+@@ -490,6 +498,8 @@ def _show_run_detail(db: StateDB, run_id: str) -> None:
+     confirmed = [f for f in findings if f.validation_status == "confirmed"]
+     canonical = [f for f in confirmed if f.is_canonical]
+     reachable = db.get_reachable_canonical_findings(run_id)
++    reportable = db.get_report_findings(run_id)
++    untraced = sum(1 for _f, tr in reportable if tr is None)
+ 
+     t = Table(title=f"run {run_id}", show_lines=False)
+     t.add_column("metric"); t.add_column("count")
+@@ -501,6 +511,8 @@ def _show_run_detail(db: StateDB, run_id: str) -> None:
+     t.add_row("findings (confirmed)", str(len(confirmed)))
+     t.add_row("findings (canonical)", str(len(canonical)))
+     t.add_row("findings (reachable)", str(len(reachable)))
++    t.add_row("findings (report)", str(len(reportable)))
++    t.add_row("findings (untraced)", str(untraced))
+     t.add_row("total cost ($)", f"{db.total_cost(run_id):.4f}")
+     console.print(t)
+ 
+diff --git a/codesec/local_agent.py b/codesec/local_agent.py
+index 2c075bc..1ebf134 100644
+--- a/codesec/local_agent.py
++++ b/codesec/local_agent.py
+@@ -519,6 +519,20 @@ def _consume_sse(r: Any) -> dict:
+             "usage": usage}
+ 
+ 
++def chat_completions_url(base_url: str) -> str:
++    """Join a provider root onto POST .../chat/completions.
++
++    Z.AI Coding Plan is ``.../api/coding/paas/v4`` (not ``/v1``). llama-server
++    and Unsloth are typically ``http://host:port`` or ``.../v1``.
++    """
++    endpoint = base_url.rstrip("/")
++    if endpoint.endswith("/chat/completions"):
++        return endpoint
++    if endpoint.endswith("/v1") or endpoint.endswith("/paas/v4"):
++        return endpoint + "/chat/completions"
++    return endpoint + "/v1/chat/completions"
++
++
+ def _chat(base_url: str, api_key: str | None, model: str, messages: list,
+           tools: list, temperature: float, max_tokens: int,
+           tool_choice: str | dict | None = None,
+@@ -533,12 +547,7 @@ def _chat(base_url: str, api_key: str | None, model: str, messages: list,
+         body["tools"] = tools
+     if tool_choice is not None:
+         body["tool_choice"] = tool_choice
+-    endpoint = base_url.rstrip("/")
+-    chat_url = (
+-        endpoint + "/chat/completions"
+-        if endpoint.endswith("/v1")
+-        else endpoint + "/v1/chat/completions"
+-    )
++    chat_url = chat_completions_url(base_url)
+     req = urllib.request.Request(
+         chat_url,
+         data=json.dumps(body).encode(),
+@@ -927,9 +936,13 @@ def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
+     (attack_class/priority/...) alongside findings; strip those extras and
+     default missing arrays so additionalProperties:false accepts the payload.
+     """
++    name = schema_file.name
++    if isinstance(payload, list) and name.startswith("recon"):
++        payload = {
++            "subsystems": [item for item in payload if isinstance(item, dict)]
++        }
+     if not isinstance(payload, dict):
+         return payload
+-    name = schema_file.name
+     out = dict(payload)
+ 
+     # Hunt output / finding.schema.json
+@@ -1257,7 +1270,52 @@ def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
+             if tbs:
+                 arch["trust_boundaries"] = tbs
+             out["architecture"] = arch
+-        # subsystems: cannot invent — leave for validator
++        # GLM-5.3 often emits a bare subsystem list and never repairs into
++        # architecture/initial_tasks. Seed the minimum valid object so one
++        # bad recon shape does not abort the whole trial.
++        if name.startswith("recon"):
++            subs = [s for s in (out.get("subsystems") or []) if isinstance(s, dict)]
++            tasks = out.get("initial_tasks")
++            bare_list = not isinstance(tasks, list) or not tasks
++            # Only seed when recon emitted subsystems with no hunt tasks
++            # (typical GLM-5.3 bare array). If tasks exist but architecture
++            # does not, leave it for a repair turn.
++            if subs and bare_list and not isinstance(out.get("architecture"), dict):
++                loc = str(subs[0].get("path") or "app.py")
++                out["architecture"] = {
++                    "build_commands": [],
++                    "entry_points": [{"kind": "http_route", "location": loc}],
++                    "trust_boundaries": [
++                        {
++                            "name": "http_to_app",
++                            "description": "Recon omitted architecture; default HTTP-to-app boundary.",
++                        }
++                    ],
++                }
++            if subs and bare_list:
++                seeded = []
++                for i, sub in enumerate(subs[:20]):
++                    path = str(sub.get("path") or ".")
++                    purpose = str(sub.get("purpose") or sub.get("name") or "component")
++                    hint = f"Review {path} for injection and auth issues. {purpose}"
++                    if len(hint) < 10:
++                        hint = f"Review {path} for security issues in this subsystem"
++                    seeded.append(
++                        {
++                            "task_id": f"t-recon-seed-{i+1}",
++                            "attack_class": "injection",
++                            "scope_hint": hint[:500],
++                            "target_files": [path],
++                            "rationale": (
++                                f"Seeded because recon listed subsystem "
++                                f"{sub.get('name') or path} without hunt tasks."
++                            ),
++                            "priority": 3,
++                            "source": "recon",
++                        }
++                    )
++                if seeded:
++                    out["initial_tasks"] = seeded
+     return out
+ 
+ 
+diff --git a/codesec/providers.py b/codesec/providers.py
+index eb7f38c..29cdf62 100644
+--- a/codesec/providers.py
++++ b/codesec/providers.py
+@@ -59,6 +59,9 @@ class Provider:
+     # entry is always the bare gateway token so a pre-set ANTHROPIC_AUTH_TOKEN
+     # still works.
+     key_env_vars: tuple[str, ...]
++    # OpenAI-compatible chat-completions root used by `--engine local`.
++    # Empty means "same as base_url" (Unsloth) or unused (Anthropic SDK).
++    openai_base_url: str = ""
+ 
+ 
+ PROVIDERS: dict[str, Provider] = {
+@@ -85,6 +88,9 @@ PROVIDERS: dict[str, Provider] = {
+         sonnet_role_model="glm-4.7",
+         haiku_role_model="glm-4.5-air",
+         key_env_vars=("ZAI_API_KEY", "CODESEC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
++        # Pi / OpenAI-compat tools use the Coding Plan paas endpoint, not
++        # the Anthropic Messages URL. `--engine local` talks to this.
++        openai_base_url="https://api.z.ai/api/coding/paas/v4",
+     ),
+     "unsloth": Provider(
+         name="unsloth",
+@@ -95,6 +101,7 @@ PROVIDERS: dict[str, Provider] = {
+         sonnet_role_model=None,
+         haiku_role_model=None,
+         key_env_vars=("UNSLOTH_API_KEY", "CODESEC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
++        openai_base_url="http://localhost:8888/v1",
+     ),
+ }
+ 
+@@ -112,6 +119,22 @@ def get_provider(name: str) -> Provider:
+         ) from None
+ 
+ 
++def resolve_key(provider: Provider, explicit: str | None = None) -> str | None:
++    return _resolve_key(provider, explicit)
++
++
++def local_base_url(provider: Provider, explicit: str | None = None) -> str:
++    """Base URL for `--engine local` (OpenAI chat completions)."""
++    if explicit:
++        return explicit.rstrip("/")
++    override = os.environ.get("CODESEC_BASE_URL", "").strip()
++    if override:
++        return override.rstrip("/")
++    if provider.openai_base_url:
++        return provider.openai_base_url.rstrip("/")
++    return (provider.base_url or "http://localhost:8080").rstrip("/")
++
++
+ def _resolve_key(provider: Provider, explicit: str | None) -> str | None:
+     if explicit:
+         return explicit
+diff --git a/codesec/stages/report.py b/codesec/stages/report.py
+index 7c0c3ef..ac86dea 100644
+--- a/codesec/stages/report.py
++++ b/codesec/stages/report.py
+@@ -175,23 +175,97 @@ def _apply_upstream(report: dict, annotations: dict) -> None:
+     _recompute_summary(report)
+ 
+ 
+-async def run_deterministic_report(ctx: StageContext, db: StateDB) -> Path:
+-    """Render authoritative final membership and a separate review queue."""
+-    reachable = db.get_reachable_canonical_findings(ctx.run_id)
+-    target = {"repo_path": str(ctx.repo_path)}
+-    report = _build_fallback_report(ctx, db, reachable, target)
+-    _apply_upstream(report, _upstream_annotations(ctx, reachable))
+-    await _grade_report(ctx, db, report, reachable)
+-    errors = validate_schema(report, ctx.schema("report"))
+-    if errors:
+-        raise StageContractError(
+-            f"deterministic report violates report schema: {errors[:5]}"
++def _trace_annotation(trace: dict | None) -> dict:
++    """Trace is annotation. Missing rows ship as untraced empty chains."""
++    if trace is None:
++        return {"status": "untraced", "entry_points": [], "call_chain": []}
++    status = trace.get("status")
++    if status not in {"reachable", "unreachable", "uncertain", "untraced"}:
++        if trace.get("reachable") is True:
++            status = "reachable"
++        elif trace.get("reachable") is False:
++            status = "unreachable"
++        else:
++            status = "uncertain"
++    return {
++        "status": status,
++        "entry_points": list(trace.get("entry_points") or []),
++        "call_chain": list(trace.get("call_chain") or []),
++    }
++
++
++def _finding_report_entry(
++    f, trace: dict | None, *, variants: list[str] | None = None
++) -> dict:
++    sev = _effective_severity(f)
++    entry = {
++        "finding_id": f.finding_id,
++        "title": f"{f.vuln_class} in {f.file}",
++        "severity": sev,
++        "vuln_class": f.vuln_class,
++        "file": f.file,
++        "line_start": f.line_start,
++        "line_end": f.line_end,
++        "description": f.description,
++        "evidence": f.evidence,
++        "trace": _trace_annotation(trace),
++        "recommendation": (
++            "Review the sink and add input validation / use a safe API."
++        ),
++        **({"cwe": f.raw_json["cwe"]} if f.raw_json.get("cwe") else {}),
++        **({"production_viable": pv}
++           if (pv := _production_viable(f)) is not None else {}),
++    }
++    if variants:
++        entry["variants"] = variants
++    return entry
++
++
++def _reconcile_report_membership(
++    ctx: StageContext, db: StateDB, report: dict, members, target: dict
++) -> dict:
++    """Authoritative membership: confirmed canonicals from the DB.
++
++    A schema-valid agent payload that omits IDs (including findings: [])
++    cannot shrink the shipped set except via fixed_upstream.
++    """
++    if not isinstance(report, dict):
++        report = {}
++    report.setdefault("run_id", ctx.run_id)
++    report.setdefault("target", target)
++    fixed_ids = {
++        item.get("finding_id")
++        for item in report.get("fixed_upstream") or []
++        if item.get("finding_id")
++    }
++    existing = {
++        item.get("finding_id"): item
++        for item in report.get("findings") or []
++        if item.get("finding_id")
++    }
++    findings_out = []
++    for f, trace in members:
++        if f.finding_id in fixed_ids:
++            continue
++        variants = (
++            _group_members_excluding(db, ctx.run_id, f.group_id, f.finding_id)
++            if f.group_id
++            else []
+         )
++        entry = existing.get(f.finding_id)
++        if entry is None:
++            entry = _finding_report_entry(f, trace, variants=variants or None)
++        else:
++            entry["trace"] = _trace_annotation(trace)
++            if variants and "variants" not in entry:
++                entry["variants"] = variants
++        findings_out.append(entry)
++    report["findings"] = findings_out
++    _recompute_summary(report)
++    return report
+ 
+-    out_dir = ctx.results_dir("report")
+-    report_path = out_dir / "report.json"
+-    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+ 
++def _review_queue_payload(ctx: StageContext, db: StateDB) -> dict:
+     review_findings = []
+     for finding in db.get_findings(ctx.run_id):
+         if finding.validation_status == "needs_more_info":
+@@ -202,18 +276,42 @@ async def run_deterministic_report(ctx: StageContext, db: StateDB) -> Path:
+                     "validation": finding.validation_json,
+                 }
+             )
+-        elif finding.validation_status == "confirmed" and finding.is_canonical:
+-            trace = db.get_trace(ctx.run_id, finding.finding_id)
+-            if trace and trace.get("status") == "uncertain":
+-                review_findings.append(
+-                    {
+-                        "finding_id": finding.finding_id,
+-                        "reason": "trace_uncertain",
+-                        "trace": trace,
+-                    }
+-                )
+-
+-    review = {
++            continue
++        if not (
++            finding.validation_status == "confirmed" and finding.is_canonical
++        ):
++            continue
++        trace = db.get_trace(ctx.run_id, finding.finding_id)
++        if trace is None:
++            review_findings.append(
++                {
++                    "finding_id": finding.finding_id,
++                    "reason": "trace_untraced",
++                }
++            )
++        elif trace.get("status") == "uncertain" or (
++            trace.get("reachable") is None
++            and trace.get("status") not in {"reachable", "unreachable", "untraced"}
++        ):
++            review_findings.append(
++                {
++                    "finding_id": finding.finding_id,
++                    "reason": "trace_uncertain",
++                    "trace": trace,
++                }
++            )
++        elif (
++            trace.get("reachable") is False
++            or trace.get("status") == "unreachable"
++        ):
++            review_findings.append(
++                {
++                    "finding_id": finding.finding_id,
++                    "reason": "trace_unreachable",
++                    "trace": trace,
++                }
++            )
++    return {
+         "run_id": ctx.run_id,
+         "findings": sorted(
+             review_findings, key=lambda item: item["finding_id"]
+@@ -224,25 +322,51 @@ async def run_deterministic_report(ctx: StageContext, db: StateDB) -> Path:
+             if task.status == "failed"
+         ),
+     }
+-    review_path = out_dir / "review_queue.json"
+-    review_path.write_text(json.dumps(review, indent=2, sort_keys=True) + "\n")
+-    db.add_artifact(
+-        ctx.run_id, "report", None, "deterministic_json", str(report_path)
++
++
++def _write_review_queue(ctx: StageContext, db: StateDB) -> Path:
++    review_path = ctx.results_dir("report") / "review_queue.json"
++    review_path.write_text(
++        json.dumps(_review_queue_payload(ctx, db), indent=2, sort_keys=True)
++        + "\n"
+     )
+     db.add_artifact(
+         ctx.run_id, "report", None, "review_queue", str(review_path)
+     )
++    return review_path
++
++
++async def run_deterministic_report(ctx: StageContext, db: StateDB) -> Path:
++    """Render authoritative final membership and a separate review queue."""
++    members = db.get_report_findings(ctx.run_id)
++    target = {"repo_path": str(ctx.repo_path)}
++    report = _build_fallback_report(ctx, db, members, target)
++    _apply_upstream(report, _upstream_annotations(ctx, members))
++    await _grade_report(ctx, db, report, members)
++    errors = validate_schema(report, ctx.schema("report"))
++    if errors:
++        raise StageContractError(
++            f"deterministic report violates report schema: {errors[:5]}"
++        )
++
++    out_dir = ctx.results_dir("report")
++    report_path = out_dir / "report.json"
++    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
++    db.add_artifact(
++        ctx.run_id, "report", None, "deterministic_json", str(report_path)
++    )
++    _write_review_queue(ctx, db)
+     return report_path
+ 
+ 
+ async def run_report(ctx: StageContext, db: StateDB) -> Path:
+-    reachable = db.get_reachable_canonical_findings(ctx.run_id)
++    members = db.get_report_findings(ctx.run_id)
+     ready = []
+-    for f, trace in reachable:
++    for f, trace in members:
+         ready.append({
+             "finding": f.raw_json,
+             "validation": f.validation_json,
+-            "trace": trace,
++            "trace": _trace_annotation(trace),
+             "variants": _group_members_excluding(db, ctx.run_id, f.group_id, f.finding_id)
+                        if f.group_id else [],
+             "severity_guidance": {
+@@ -250,8 +374,8 @@ async def run_report(ctx: StageContext, db: StateDB) -> Path:
+             },
+         })
+ 
+-    upstream = _upstream_annotations(ctx, reachable)
+-    for item, (f, _trace) in zip(ready, reachable):
++    upstream = _upstream_annotations(ctx, members)
++    for item, (f, _trace) in zip(ready, members):
+         info = upstream.get(f.finding_id)
+         if info is not None:
+             item["upstream_status"] = info["status"]
+@@ -268,8 +392,7 @@ async def run_report(ctx: StageContext, db: StateDB) -> Path:
+ 
+     out_path = ctx.results_dir("report") / "report.json"
+ 
+-    if not ready:
+-        # No reachable findings — emit a minimal empty report without burning an agent call.
++    if not members:
+         empty = {
+             "run_id": ctx.run_id,
+             "target": target,
+@@ -281,7 +404,8 @@ async def run_report(ctx: StageContext, db: StateDB) -> Path:
+         if hardening:
+             empty["hardening"] = hardening
+         out_path.write_text(json.dumps(empty, indent=2))
+-        log.info("[%s] report: no reachable findings — wrote empty report to %s",
++        _write_review_queue(ctx, db)
++        log.info("[%s] report: no confirmed canonical findings — wrote empty report to %s",
+                  ctx.run_id, out_path)
+         return out_path
+ 
+@@ -302,30 +426,26 @@ async def run_report(ctx: StageContext, db: StateDB) -> Path:
+             artifact_name="report_agent",
+             repair_attempts=max(sc.repair_attempts, 2),  # report MUST validate
+         )
++        payload = result.payload
++        db.record_agent_result(ctx.run_id, "report", None, result)
++        db.add_artifact(ctx.run_id, "report", None, "jsonl", str(result.artifact_path))
+     except (AgentRunError, TransientAgentError) as e:
+         log.error("[%s] report agent failed: %s — emitting fallback report",
+                   ctx.run_id, e)
+-        fallback = _build_fallback_report(ctx, db, reachable, target)
+-        _apply_upstream(fallback, upstream)
+-        await _grade_report(ctx, db, fallback, reachable)
+-        out_path.write_text(json.dumps(fallback, indent=2))
+-        return out_path
+-
+-    db.record_agent_result(ctx.run_id, "report", None, result)
+-    db.add_artifact(ctx.run_id, "report", None, "jsonl", str(result.artifact_path))
+-    # The section contents are mechanical — if the model omitted them while
+-    # inputs were non-empty, backfill the deterministic rendering so the two
+-    # pipeline paths stay equivalent.
+-    if needs_validation and not result.payload.get("needs_validation"):
+-        result.payload["needs_validation"] = needs_validation
+-    if hardening and not result.payload.get("hardening"):
+-        result.payload["hardening"] = hardening
+-    _enforce_severity_rules(ctx, result.payload, reachable)
+-    _apply_upstream(result.payload, upstream)
+-    await _grade_report(ctx, db, result.payload, reachable)
+-    out_path.write_text(json.dumps(result.payload, indent=2))
++        payload = _build_fallback_report(ctx, db, members, target)
++
++    if needs_validation and not payload.get("needs_validation"):
++        payload["needs_validation"] = needs_validation
++    if hardening and not payload.get("hardening"):
++        payload["hardening"] = hardening
++    _reconcile_report_membership(ctx, db, payload, members, target)
++    _enforce_severity_rules(ctx, payload, members)
++    _apply_upstream(payload, upstream)
++    await _grade_report(ctx, db, payload, members)
++    out_path.write_text(json.dumps(payload, indent=2))
++    _write_review_queue(ctx, db)
+     log.info("[%s] report: %d findings written to %s",
+-             ctx.run_id, len(result.payload.get("findings", [])), out_path)
++             ctx.run_id, len(payload.get("findings", [])), out_path)
+     return out_path
+ 
+ 
+@@ -335,37 +455,24 @@ def _group_members_excluding(db: StateDB, run_id: str, group_id: str,
+ 
+ 
+ def _build_fallback_report(ctx: StageContext, db: StateDB,
+-                           reachable, target: dict) -> dict:
+-    by_sev: dict[str, int] = {}
++                           members, target: dict) -> dict:
+     findings_out = []
+-    for f, trace in reachable:
+-        sev = _effective_severity(f)
+-        by_sev[sev] = by_sev.get(sev, 0) + 1
+-        findings_out.append({
+-            "finding_id": f.finding_id,
+-            "title": f"{f.vuln_class} in {f.file}",
+-            "severity": sev,
+-            "vuln_class": f.vuln_class,
+-            "file": f.file,
+-            "line_start": f.line_start,
+-            "line_end": f.line_end,
+-            "description": f.description,
+-            "evidence": f.evidence,
+-            "trace": {
+-                "entry_points": trace.get("entry_points", []),
+-                "call_chain": trace.get("call_chain", []),
+-            },
+-            "recommendation": "Review the sink and add input validation / use a safe API.",
+-            **({"cwe": f.raw_json["cwe"]} if f.raw_json.get("cwe") else {}),
+-            **({"production_viable": pv}
+-               if (pv := _production_viable(f)) is not None else {}),
+-        })
++    for f, trace in members:
++        variants = (
++            _group_members_excluding(db, ctx.run_id, f.group_id, f.finding_id)
++            if f.group_id
++            else []
++        )
++        findings_out.append(
++            _finding_report_entry(f, trace, variants=variants or None)
++        )
+     report = {
+         "run_id": ctx.run_id,
+         "target": target,
+-        "summary": {"total": len(findings_out), "by_severity": by_sev},
++        "summary": {"total": 0, "by_severity": {}},
+         "findings": findings_out,
+     }
++    _recompute_summary(report)
+     needs_validation = _needs_validation_entries(db, ctx.run_id)
+     if needs_validation:
+         report["needs_validation"] = needs_validation
+diff --git a/codesec/state.py b/codesec/state.py
+index 2e88241..949442b 100644
+--- a/codesec/state.py
++++ b/codesec/state.py
+@@ -511,24 +511,6 @@ class StateDB:
+         ):
+             gaps.append(f"confirmed finding {row['finding_id']} is not grouped")
+ 
+-        for row in self._conn.execute(
+-            """
+-            SELECT f.finding_id
+-            FROM findings AS f
+-            LEFT JOIN traces AS t
+-              ON t.run_id = f.run_id AND t.finding_id = f.finding_id
+-            WHERE f.run_id = ?
+-              AND f.validation_status = 'confirmed'
+-              AND f.is_canonical = 1
+-              AND t.finding_id IS NULL
+-            ORDER BY f.finding_id
+-            """,
+-            (run_id,),
+-        ):
+-            gaps.append(
+-                f"canonical finding {row['finding_id']} has no terminal trace"
+-            )
+-
+         for row in self._conn.execute(
+             """
+             SELECT g.group_id
+@@ -1023,6 +1005,15 @@ class StateDB:
+                 out.append((f, tr))
+         return out
+ 
++    def get_report_findings(self, run_id: str) -> list[tuple[Finding, dict | None]]:
++        """Confirmed canonicals for the shipped report. Trace may be missing."""
++        out: list[tuple[Finding, dict | None]] = []
++        for f in self.get_findings(
++            run_id, validation_status="confirmed", canonical_only=True
++        ):
++            out.append((f, self.get_trace(run_id, f.finding_id)))
++        return out
++
+     # ---------- dedupe ----------
+ 
+     def add_dedupe_group(self, run_id: str, group: dict) -> None:
+diff --git a/prompts/08-report.md b/prompts/08-report.md
+index b756bb9..882a29e 100644
+--- a/prompts/08-report.md
++++ b/prompts/08-report.md
+@@ -7,9 +7,10 @@ system.
+ 
+ # Objective
+ 
+-Emit one JSON document containing every confirmed, reachable finding
+-(canonical members only), with title, evidence, trace, and concrete
+-remediation.
++Emit one JSON document containing every confirmed canonical finding
++in `ready_findings`, with title, evidence, trace, and concrete
++remediation. Trace status (reachable / unreachable / uncertain /
++untraced) is annotation, not a reason to omit the finding.
+ 
+ # Inputs
+ 
+@@ -70,15 +71,16 @@ A single JSON object matching `schemas/report.schema.json`. No prose.
+      step and copy the verdict into the entry's `production_viable`
+      field — a bug that cannot fire in a release build is not
+      production-severity. **Be conservative.** "High" means an
+-     attacker would actually use it. If the dataset has nothing
+-     critical-or-high that you'd stake a reputation on, emit an empty
+-     `findings` array and let the summary speak for itself — do not
+-     pad to feel productive.
++     attacker would actually use it. Do **not** emit an empty
++     `findings` array to look conservative — every `ready_findings`
++     entry must appear. Lower severity instead of dropping the row.
+    - `cwe`: choose the most-specific CWE id (CWE-78 for OS command
+      injection, CWE-89 for SQLi, etc.). Omit if uncertain rather than
+      guess.
+    - `evidence`: verbatim code snippet from the finding.
+-   - `trace`: copy `entry_points` and `call_chain` from the trace.
++   - `trace`: copy `status`, `entry_points`, and `call_chain` from the
++     input trace. If `status` is `untraced` or chains are empty, still
++     ship the finding with those empty arrays.
+    - `recommendation`: concrete patch direction — name the function,
+      name the safer API, mention the input validation. Avoid vague
+      "validate user input" advice.
+@@ -105,8 +107,9 @@ A single JSON object matching `schemas/report.schema.json`. No prose.
+ 
+ # Constraints
+ 
+-- Only canonical-and-reachable findings appear in `findings`. If the
+-  trace says `reachable: false`, the finding does not ship.
++- Every confirmed canonical in `ready_findings` appears in `findings`.
++  Do not drop a finding because trace `status` is `unreachable`,
++  `uncertain`, or `untraced`, or because severity is below high.
+ - `needs_validation` entries never carry a severity — a missing fact is
+   not a confirmed impact.
+ - No editorial commentary, no exec summary prose. The consumer is a
+diff --git a/schemas/report.schema.json b/schemas/report.schema.json
+index 7fedafe..14c33ca 100644
+--- a/schemas/report.schema.json
++++ b/schemas/report.schema.json
+@@ -1,7 +1,7 @@
+ {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "title": "Report",
+-  "description": "Final structured report — only reachable, deduped findings.",
++  "description": "Final structured report — confirmed canonical findings. Trace is annotation (reachable / unreachable / uncertain / untraced), not a membership filter.",
+   "type": "object",
+   "required": ["run_id", "target", "summary", "findings"],
+   "additionalProperties": false,
+@@ -57,6 +57,10 @@
+             "required": ["entry_points", "call_chain"],
+             "additionalProperties": false,
+             "properties": {
++              "status": {
++                "type": "string",
++                "enum": ["reachable", "unreachable", "uncertain", "untraced"]
++              },
+               "entry_points": {
+                 "type": "array",
+                 "items": {
+diff --git a/tests/test_auth.py b/tests/test_auth.py
+index 4267c5b..1e74eb2 100644
+--- a/tests/test_auth.py
++++ b/tests/test_auth.py
+@@ -17,7 +17,7 @@ from pathlib import Path
+ import pytest
+ 
+ from codesec import auth as auth_mod
+-from codesec.auth import AuthError, configure_auth
++from codesec.auth import AuthError, configure_auth, find_claude_cli
+ 
+ 
+ def _empty_env(tmp_path: Path) -> Path:
+@@ -58,11 +58,20 @@ def test_missing_everything_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
+ 
+ def test_missing_claude_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+     monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "fake-test-token")
+-    monkeypatch.setenv("PATH", "/nonexistent")
++    monkeypatch.setattr(auth_mod, "find_claude_cli", lambda: None)
+     with pytest.raises(AuthError, match="claude.*CLI"):
+         configure_auth(env_file=_empty_env(tmp_path))
+ 
+ 
++def test_find_claude_cli_falls_back_to_bundled_sdk_binary(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    monkeypatch.setattr(shutil, "which", lambda name: None)
++    path = find_claude_cli()
++    assert path is not None
++    assert path.endswith("/_bundled/claude")
++
++
+ # ---------- default behavior (allow_api_key=False, preserves upstream) ----------
+ 
+ 
+diff --git a/tests/test_local_agent.py b/tests/test_local_agent.py
+index 531d03c..273e143 100644
+--- a/tests/test_local_agent.py
++++ b/tests/test_local_agent.py
+@@ -208,6 +208,16 @@ def test_chat_accepts_endpoint_with_v1_suffix(monkeypatch):
+     assert captured["url"] == "http://localhost:8888/v1/chat/completions"
+ 
+ 
++def test_chat_completions_url_for_zai_coding_paas():
++    from codesec.local_agent import chat_completions_url
++    assert chat_completions_url("https://api.z.ai/api/coding/paas/v4") == (
++        "https://api.z.ai/api/coding/paas/v4/chat/completions"
++    )
++    assert chat_completions_url("http://127.0.0.1:8080") == (
++        "http://127.0.0.1:8080/v1/chat/completions"
++    )
++
++
+ def test_chat_classifies_http_500_as_transient(monkeypatch):
+     def fail(request, timeout):
+         raise urllib.error.HTTPError(
+diff --git a/tests/test_local_engine_recon_repair.py b/tests/test_local_engine_recon_repair.py
+index 4e07b02..ef8f457 100644
+--- a/tests/test_local_engine_recon_repair.py
++++ b/tests/test_local_engine_recon_repair.py
+@@ -89,6 +89,22 @@ def test_validate_accepts_near_valid_recon():
+     assert errs == []
+ 
+ 
++def test_normalize_wraps_bare_subsystem_array():
++    raw = [
++        {
++            "name": "app_entrypoint",
++            "path": "app.py",
++            "language": "python",
++            "purpose": "Flask entrypoint",
++            "external_dependencies": ["flask"],
++        }
++    ]
++    norm = _normalize_stage_payload(raw, RECON_SCHEMA)
++    assert validate_schema(norm, RECON_SCHEMA) == []
++    assert norm["subsystems"][0]["name"] == "app_entrypoint"
++    assert norm["initial_tasks"]
++
++
+ def test_hunt_pure_task_echo_normalizes_to_empty_findings():
+     """Model re-emits input task fields instead of HuntOutput — must not fail schema."""
+     schema = ROOT / "schemas" / "finding.schema.json"
+diff --git a/tests/test_providers.py b/tests/test_providers.py
+index d83a7d3..c73d0e0 100644
+--- a/tests/test_providers.py
++++ b/tests/test_providers.py
+@@ -14,6 +14,8 @@ from codesec.providers import (
+     ProviderError,
+     apply_provider_env,
+     get_provider,
++    local_base_url,
++    resolve_key,
+     role_model,
+ )
+ 
+@@ -46,11 +48,30 @@ def test_provider_registry_has_expected_names():
+ def test_zai_preset_speaks_anthropic_api():
+     p = get_provider("zai")
+     assert p.base_url == "https://api.z.ai/api/anthropic"
++    assert p.openai_base_url == "https://api.z.ai/api/coding/paas/v4"
+     assert p.opus_role_model == "glm-5.2"
+     assert p.sonnet_role_model == "glm-4.7"
+     assert "ZAI_API_KEY" in p.key_env_vars
+ 
+ 
++def test_zai_local_base_url_is_coding_paas():
++    p = get_provider("zai")
++    assert local_base_url(p) == "https://api.z.ai/api/coding/paas/v4"
++
++
++def test_configure_auth_zai_does_not_need_claude(monkeypatch, tmp_path):
++    monkeypatch.setattr(auth_mod, "find_claude_cli", lambda: None)
++    for v in ("ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",
++              "ZAI_API_KEY", "CODESEC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"):
++        monkeypatch.delenv(v, raising=False)
++    status = configure_auth(
++        _empty_env(tmp_path), provider="zai", provider_api_key="zai-secret",
++    )
++    assert status.auth_mode == "gateway"
++    assert status.provider == "zai"
++    assert status.claude_cli_path is None
++
++
+ def test_unsloth_preset_defaults_to_local_port():
+     p = get_provider("unsloth")
+     assert p.base_url.startswith("http://localhost")
+diff --git a/tests/test_report_stage.py b/tests/test_report_stage.py
+index fd24e78..c0bc007 100644
+--- a/tests/test_report_stage.py
++++ b/tests/test_report_stage.py
+@@ -488,3 +488,153 @@ async def test_report_grader_off_by_default(
+     report = json.loads(report_path.read_text())
+ 
+     assert "grading" not in report["findings"][0]
++
++
++def _seed_confirmed_canonical(
++    db: StateDB,
++    finding_id: str,
++    *,
++    line: int = 2,
++    trace: dict | None = ...,
++) -> None:
++    if not db.get_all_tasks("run"):
++        db.add_task(
++            "run",
++            {
++                "task_id": "t_1",
++                "attack_class": "sqli",
++                "scope_hint": "inspect the query construction",
++                "target_files": ["app.py"],
++                "rationale": "untrusted input reaches a database query",
++                "priority": 1,
++                "source": "recon",
++            },
++        )
++        db.update_task_status("run", "t_1", "done")
++    db.add_finding(
++        "run",
++        "t_1",
++        {
++            "finding_id": finding_id,
++            "file": "app.py",
++            "line_start": line,
++            "line_end": line,
++            "vuln_class": "sql_injection",
++            "severity": "high",
++            "cwe": "CWE-89",
++            "description": (
++                "Untrusted query input reaches SQL execution without "
++                "parameter binding."
++            ),
++            "evidence_snippet": "execute(query)",
++            "confidence": 0.9,
++        },
++    )
++    db.set_finding_validation(
++        "run",
++        finding_id,
++        "confirmed",
++        {"finding_id": finding_id, "verdict": "confirmed"},
++    )
++    gid = f"g_{finding_id}"
++    db.add_dedupe_group(
++        "run",
++        {
++            "group_id": gid,
++            "root_cause": "untrusted input reaches SQL execution",
++            "canonical_finding_id": finding_id,
++            "member_finding_ids": [finding_id],
++        },
++    )
++    db.assign_finding_group("run", finding_id, gid, True)
++    if trace is not ... and trace is not None:
++        db.add_trace("run", finding_id, {"finding_id": finding_id, **trace})
++
++
++async def test_deterministic_report_ships_untraced_and_unreachable(
++    tmp_path: Path,
++) -> None:
++    repo = tmp_path / "repo"
++    repo.mkdir()
++    (repo / "app.py").write_text("query = request.args['q']\nexecute(query)\n")
++    db = StateDB(tmp_path / "state.db")
++    db.create_run(str(repo), "run")
++    _seed_confirmed_canonical(db, "f_untraced", line=1, trace=None)
++    _seed_confirmed_canonical(
++        db,
++        "f_unreachable",
++        line=2,
++        trace={
++            "reachable": False,
++            "confidence": 0.2,
++            "rationale": "no HTTP path reaches this helper",
++            "entry_points": [],
++            "call_chain": [],
++        },
++    )
++    ctx = StageContext(
++        run_id="run",
++        repo_path=repo,
++        config=HarnessConfig(),
++        run_results_root=tmp_path / "results",
++        run_work_root=tmp_path / "work",
++    )
++    report_path = await report_stage.run_deterministic_report(ctx, db)
++    report = json.loads(report_path.read_text())
++    review = json.loads(
++        (tmp_path / "results" / "report" / "review_queue.json").read_text()
++    )
++    by_id = {item["finding_id"]: item for item in report["findings"]}
++    assert set(by_id) == {"f_untraced", "f_unreachable"}
++    assert by_id["f_untraced"]["trace"]["status"] == "untraced"
++    assert by_id["f_untraced"]["trace"]["entry_points"] == []
++    assert by_id["f_untraced"]["trace"]["call_chain"] == []
++    assert by_id["f_unreachable"]["trace"]["status"] == "unreachable"
++    reasons = {item["finding_id"]: item["reason"] for item in review["findings"]}
++    assert reasons["f_untraced"] == "trace_untraced"
++    assert reasons["f_unreachable"] == "trace_unreachable"
++    from codesec.json_utils import validate_schema
++    assert validate_schema(report, ctx.schema("report")) == []
++
++
++async def test_run_report_reconciles_empty_agent_findings(
++    tmp_path: Path, monkeypatch
++) -> None:
++    repo = tmp_path / "repo"
++    repo.mkdir()
++    (repo / "app.py").write_text("query = request.args['q']\nexecute(query)\n")
++    db = StateDB(tmp_path / "state.db")
++    db.create_run(str(repo), "run")
++    _seed_confirmed_canonical(db, "f_kept", line=2, trace=None)
++
++    async def empty_agent(**kwargs):
++        return AgentResult(
++            payload={
++                "run_id": "run",
++                "target": {"repo_path": str(repo)},
++                "summary": {"total": 0, "by_severity": {}},
++                "findings": [],
++            },
++            cost_usd=None,
++            input_tokens=None,
++            output_tokens=None,
++            cache_read_tokens=None,
++            cache_creation_tokens=None,
++            num_turns=1,
++            duration_ms=None,
++            session_id=None,
++            artifact_path=tmp_path / "report_agent.jsonl",
++            repair_used=False,
++        )
++
++    monkeypatch.setattr(report_stage, "run_agent", empty_agent)
++    ctx = _report_context(repo, tmp_path, grade=False)
++    report_path = await report_stage.run_report(ctx, db)
++    report = json.loads(report_path.read_text())
++    assert [item["finding_id"] for item in report["findings"]] == ["f_kept"]
++    assert report["findings"][0]["trace"]["status"] == "untraced"
++    assert report["summary"]["total"] == 1
++    review = json.loads(
++        (tmp_path / "results" / "report" / "review_queue.json").read_text()
++    )
++    assert review["findings"][0]["reason"] == "trace_untraced"
+diff --git a/tests/test_state.py b/tests/test_state.py
+index 94aa4c1..44cab99 100644
+--- a/tests/test_state.py
++++ b/tests/test_state.py
+@@ -347,9 +347,7 @@ def test_completion_gaps_require_terminal_work_for_every_input(tmp_path: Path) -
+         },
+     )
+     db.assign_finding_group(run_id, "f_1", "g_1", True)
+-    assert db.completion_gaps(run_id) == [
+-        "canonical finding f_1 has no terminal trace"
+-    ]
++    assert db.completion_gaps(run_id) == []
+ 
+     db.add_trace(
+         run_id,
+@@ -364,6 +362,91 @@ def test_completion_gaps_require_terminal_work_for_every_input(tmp_path: Path) -
+     assert db.completion_gaps(run_id) == []
+ 
+ 
++def test_completion_gaps_group_without_canonical_still_reported(
++    tmp_path: Path,
++) -> None:
++    db = StateDB(tmp_path / "state.db")
++    run_id = db.create_run("/repo", "run")
++    db.add_task(run_id, _task())
++    db.update_task_status(run_id, "t_1", "done")
++    db.add_finding(run_id, "t_1", _finding())
++    db.set_finding_validation(
++        run_id,
++        "f_1",
++        "confirmed",
++        {"finding_id": "f_1", "verdict": "confirmed"},
++    )
++    db.add_dedupe_group(
++        run_id,
++        {
++            "group_id": "g_orphan",
++            "root_cause": "untrusted input reaches a database query",
++            "canonical_finding_id": "f_missing",
++            "member_finding_ids": ["f_1"],
++        },
++    )
++    db.assign_finding_group(run_id, "f_1", "g_orphan", False)
++    gaps = db.completion_gaps(run_id)
++    assert "confirmed finding f_1 is not grouped" not in gaps
++    assert any("g_orphan" in g and "no canonical" in g for g in gaps)
++
++
++def test_get_report_findings_includes_untraced_and_unreachable(
++    tmp_path: Path,
++) -> None:
++    db = StateDB(tmp_path / "state.db")
++    run_id = db.create_run("/repo", "run")
++    db.add_task(run_id, _task())
++    db.update_task_status(run_id, "t_1", "done")
++    for fid in ("f_untraced", "f_unreachable", "f_reachable"):
++        db.add_finding(run_id, "t_1", _finding(fid))
++        db.set_finding_validation(
++            run_id, fid, "confirmed", {"finding_id": fid, "verdict": "confirmed"}
++        )
++        db.add_dedupe_group(
++            run_id,
++            {
++                "group_id": f"g_{fid}",
++                "root_cause": "untrusted input reaches a database query",
++                "canonical_finding_id": fid,
++                "member_finding_ids": [fid],
++            },
++        )
++        db.assign_finding_group(run_id, fid, f"g_{fid}", True)
++    db.add_trace(
++        run_id,
++        "f_unreachable",
++        {
++            "finding_id": "f_unreachable",
++            "reachable": False,
++            "confidence": 0.2,
++            "rationale": "no HTTP path reaches the sink",
++            "entry_points": [],
++            "call_chain": [],
++        },
++    )
++    db.add_trace(
++        run_id,
++        "f_reachable",
++        {
++            "finding_id": "f_reachable",
++            "reachable": True,
++            "confidence": 0.9,
++            "rationale": "HTTP input reaches the query executor.",
++            "entry_points": [{"kind": "http_route", "location": "a.py:1"}],
++            "call_chain": [
++                {"file": "a.py", "function": "route", "line": 1},
++            ],
++        },
++    )
++    reportable = {f.finding_id: tr for f, tr in db.get_report_findings(run_id)}
++    assert set(reportable) == {"f_untraced", "f_unreachable", "f_reachable"}
++    assert reportable["f_untraced"] is None
++    assert reportable["f_unreachable"]["reachable"] is False
++    reachable = {f.finding_id for f, _tr in db.get_reachable_canonical_findings(run_id)}
++    assert reachable == {"f_reachable"}
++
++
+ def test_run_and_task_lifecycle(tmp_path: Path) -> None:
+     db = StateDB(tmp_path / "state.db")
+     rid = db.create_run("/some/repo", "test_run")

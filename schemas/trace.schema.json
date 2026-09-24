@@ -33,16 +33,30 @@
     },
     "call_chain": {
       "type": "array",
-      "description": "Ordered chain from entry to sink. First element is the entry frame; last is the sink.",
+      "description": "Ordered chain from EXTERNAL ENTRY to SINK, serialized entry-to-sink. The final frame must sit at the authoritative sink location supplied in the input. A one-element chain is valid when the handler function is itself both the entry point and the sink (entry-point evidence is still required). Dependency/framework assumptions belong in boundary_frames, never here.",
       "items": {
         "type": "object",
         "required": ["file", "function", "line"],
         "additionalProperties": false,
         "properties": {
-          "file": { "type": "string" },
+          "file": { "type": "string", "description": "Repository-relative path; every executable frame must be a real file in the repo." },
           "function": { "type": "string" },
           "line": { "type": "integer", "minimum": 1 },
           "note": { "type": "string" }
+        }
+      }
+    },
+    "boundary_frames": {
+      "type": "array",
+      "description": "Dependency/framework boundary assumptions (P04). Frames the tracer could not resolve inside the repository (installed packages, framework routing) are recorded here as explicit assumptions instead of pretending installed dependency paths are repo files. A genuinely unresolvable boundary is an uncertainty, not a fabricated repo frame.",
+      "items": {
+        "type": "object",
+        "required": ["boundary", "location", "assumption"],
+        "additionalProperties": false,
+        "properties": {
+          "boundary": { "type": "string", "description": "e.g. flask.routing, site-packages/django" },
+          "location": { "type": "string" },
+          "assumption": { "type": "string", "description": "What is assumed about calls crossing this boundary and why." }
         }
       }
     },
@@ -65,6 +79,19 @@
       }
     },
     "rationale": { "type": "string", "minLength": 20 },
+    "uncertainty": {
+      "type": "object",
+      "description": "Required for status=uncertain (P04). Separates source-level evidence uncertainty from operational failure of the tracer itself.",
+      "required": ["kind", "reason_code"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["source_evidence", "operational"] },
+        "reason_code": {
+          "type": "string",
+          "description": "Machine-readable reason: missing_runtime_evidence, ambiguous_config, framework_boundary_unresolved, sink_mismatch, missing_repo_frame, invalid_line, repair_exhausted, engine_failure, other."
+        }
+      }
+    },
     "blockers": {
       "type": "array",
       "description": "Reasons the path is NOT reachable (sanitizers, auth gates, dead code, etc.).",
@@ -88,7 +115,7 @@
         "properties": {
           "reachable": {"const": true},
           "entry_points": {"minItems": 1},
-          "call_chain": {"minItems": 2},
+          "call_chain": {"minItems": 1},
           "external_inputs": {"minItems": 1},
           "marker": {
             "description": "A reachable verdict may only carry a marker that was actually verified.",
@@ -110,7 +137,7 @@
     {
       "if": {"properties": {"status": {"const": "uncertain"}}},
       "then": {
-        "required": ["blockers"],
+        "required": ["blockers", "uncertainty"],
         "properties": {
           "reachable": {"type": "null"},
           "blockers": {"minItems": 1}
