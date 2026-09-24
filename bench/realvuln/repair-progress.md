@@ -1174,3 +1174,15 @@ untouched (headline recomputes exactly).
 Post-repair source_tree_sha256: `9632dded2bab8f23c2125f048840f466cfb3cf9d087f2ff9f75a737e4920ce03`;
 neither it nor any post-run hash equals the frozen matrix code (provenance
 distinction maintained).
+
+## Post-plan closeout (2026-09-24)
+
+- **Banked**: two commits — `909e3b2` (pre-existing post-matrix/repair-package
+  state, byte-verified against the Step-A archive) and `3331e27` (the
+  2026-09-24 reliability fixes + FP review). Post-repair state archived as
+  `source-archive-post-relfix.tar.gz` (+ hashes) before committing.
+- **Auth-CLI test skips DESCOPED** (13 in `tests/test_auth.py`): the frozen
+  experiment runtime uses `--engine local` exclusively and never shells out
+  to the claude CLI; installing it would add an unused heavyweight
+  dependency. Skip messages now state the descope. The remaining live-bench
+  marker skip stays by design.

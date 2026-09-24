@@ -28,7 +28,12 @@ def _empty_env(tmp_path: Path) -> Path:
 
 def _require_claude_cli() -> None:
     if shutil.which("claude") is None:
-        pytest.skip("claude CLI not installed")
+        pytest.skip(
+            "claude CLI not installed (DESCOPED 2026-09-24: the frozen "
+            "experiment runtime uses --engine local exclusively and never "
+            "shells out to the claude CLI; install the CLI to run these "
+            "backend tests)"
+        )
 
 
 def _clear_all_auth_env(monkeypatch: pytest.MonkeyPatch) -> None:
