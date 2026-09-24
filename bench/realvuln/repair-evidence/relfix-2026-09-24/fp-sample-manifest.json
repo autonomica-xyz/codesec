@@ -1,0 +1,513 @@
+{
+ "seed": 20260924,
+ "created_before_source_inspection": true,
+ "h_fp_occurrences_total": 218,
+ "h_unique_claims_total": 198,
+ "selection": {
+  "realvuln-damn-vulnerable-flask-application": [
+   {
+    "file": "app.py",
+    "line": 14,
+    "cwe": "CWE-614",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_fb_session_cookie_flags_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "app.py",
+    "line": 79,
+    "cwe": "CWE-862",
+    "occurrences": 2,
+    "trials": [
+     1,
+     3
+    ],
+    "finding_ids": [
+     "f_web_app_auth_bypass_6_2",
+     "f_t_auth_idor_6_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "app.py",
+    "line": 140,
+    "cwe": "CWE-209",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_fb_lookup_nameerror_debug_leak_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "test.db",
+    "line": 1,
+    "cwe": "CWE-256",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_fb_testdb_plaintext_creds_committed_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   }
+  ],
+  "realvuln-dvpwa": [
+   {
+    "file": "sqli/app.py",
+    "line": 23,
+    "cwe": "CWE-209",
+    "occurrences": 2,
+    "trials": [
+     1,
+     3
+    ],
+    "finding_ids": [
+     "f_t_gf_debug_info_disclosure_1_1",
+     "f_t_fb_info_disclosure_50x_error_page_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "sqli/views.py",
+    "line": 40,
+    "cwe": "CWE-204",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_gf_views_login_enum_1_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "sqli/views.py",
+    "line": 54,
+    "cwe": "CWE-754",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_t_gf_views_input_handling_1_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "sqli/views.py",
+    "line": 86,
+    "cwe": "CWE-20",
+    "occurrences": 1,
+    "trials": [
+     1
+    ],
+    "finding_ids": [
+     "f_t_gf_course_input_validation_1_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   }
+  ],
+  "realvuln-lets-be-bad-guys": [
+   {
+    "file": "badguys/settings.py",
+    "line": 99,
+    "cwe": "CWE-614",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_gf_injection_views_session_management_1_2"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "badguys/static/js/vendor/jquery.js",
+    "line": 1,
+    "cwe": "CWE-1104",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_static_frontend_known_vuln_components_1_2"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "badguys/vulnerable/views.py",
+    "line": 39,
+    "cwe": "CWE-754",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_t_gf_redirect_views_denial_of_service_1_2"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "badguys/vulnerable/views.py",
+    "line": 181,
+    "cwe": "CWE-837",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_exercise_views_logic_chain_7_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   }
+  ],
+  "realvuln-pygoat": [
+   {
+    "file": "introduction/views.py",
+    "line": 493,
+    "cwe": "CWE-307",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_introduction_otp_bypass_16_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "introduction/views.py",
+    "line": 583,
+    "cwe": "CWE-1336",
+    "occurrences": 1,
+    "trials": [
+     1
+    ],
+    "finding_ids": [
+     "f_intro_views_ssti_eval_9_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "introduction/views.py",
+    "line": 789,
+    "cwe": "CWE-565",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_views_idor_17_3"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "introduction/views.py",
+    "line": 1055,
+    "cwe": "CWE-287",
+    "occurrences": 1,
+    "trials": [
+     1
+    ],
+    "finding_ids": [
+     "f_intro_views_auth_bypass_21_2"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   }
+  ],
+  "realvuln-python-insecure-app": [
+   {
+    "file": "app/main.py",
+    "line": 29,
+    "cwe": "CWE-209",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_t_gf_fastapi_info_disclosure_1_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "app/main.py",
+    "line": 31,
+    "cwe": "CWE-1088",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_t_gf_dos_no_timeout_1_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "app/main.py",
+    "line": 38,
+    "cwe": "CWE-400",
+    "occurrences": 1,
+    "trials": [
+     1
+    ],
+    "finding_ids": [
+     "f_fb_unbounded_template_compile_dos_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "caddy/Caddyfile",
+    "line": 13,
+    "cwe": "CWE-288",
+    "occurrences": 1,
+    "trials": [
+     3
+    ],
+    "finding_ids": [
+     "f_caddy_waf_bypass_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   }
+  ],
+  "realvuln-vampi": [
+   {
+    "file": "api_views/books.py",
+    "line": 30,
+    "cwe": "CWE-248",
+    "occurrences": 2,
+    "trials": [
+     2,
+     3
+    ],
+    "finding_ids": [
+     "f_gf_books_unique_constraint_dos_1_1",
+     "f_t_gf_books_api_dos_6_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "api_views/users.py",
+    "line": 52,
+    "cwe": "CWE-20",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_gf_users_register_validation_bypass_1_2"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "api_views/users.py",
+    "line": 52,
+    "cwe": "CWE-367",
+    "occurrences": 1,
+    "trials": [
+     2
+    ],
+    "finding_ids": [
+     "f_t_gf_users_register_race_1_1"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   },
+   {
+    "file": "openapi_specs/openapi3.yml",
+    "line": 16,
+    "cwe": "CWE-306",
+    "occurrences": 2,
+    "trials": [
+     1,
+     2
+    ],
+    "finding_ids": [
+     "f_t_gf_openapi_routing_createdb_unauth_1_1",
+     "f_t_gf_openapi_spec_route_gap_1_2"
+    ],
+    "match_reasons": [
+     "unmatched"
+    ],
+    "gt_ids": []
+   }
+  ]
+ },
+ "pi_comparison": {
+  "realvuln-damn-vulnerable-flask-application": {
+   "file": "app.py",
+   "line": 2,
+   "cwe": "CWE-502",
+   "occurrences": 1,
+   "trials": [
+    3
+   ],
+   "finding_ids": [
+    "DVFA-011"
+   ],
+   "match_reasons": [
+    "unmatched"
+   ],
+   "gt_ids": []
+  },
+  "realvuln-dvpwa": {
+   "file": "config/dev.yaml",
+   "line": 1,
+   "cwe": "CWE-798",
+   "occurrences": 1,
+   "trials": [
+    3
+   ],
+   "finding_ids": [
+    "CONFIG-001"
+   ],
+   "match_reasons": [
+    "unmatched"
+   ],
+   "gt_ids": []
+  },
+  "realvuln-lets-be-bad-guys": {
+   "file": "badguys/settings.py",
+   "line": 10,
+   "cwe": "CWE-489",
+   "occurrences": 1,
+   "trials": [
+    2
+   ],
+   "finding_ids": [
+    "SV-10"
+   ],
+   "match_reasons": [
+    "unmatched"
+   ],
+   "gt_ids": []
+  },
+  "realvuln-pygoat": {
+   "file": "introduction/apis.py",
+   "line": 104,
+   "cwe": "CWE-73",
+   "occurrences": 1,
+   "trials": [
+    3
+   ],
+   "finding_ids": [
+    "ARBIT-WRITE-01"
+   ],
+   "match_reasons": [
+    "unmatched"
+   ],
+   "gt_ids": []
+  },
+  "realvuln-python-insecure-app": {
+   "file": "app/main.py",
+   "line": 13,
+   "cwe": "CWE-489",
+   "occurrences": 1,
+   "trials": [
+    3
+   ],
+   "finding_ids": [
+    "4"
+   ],
+   "match_reasons": [
+    "unmatched"
+   ],
+   "gt_ids": []
+  },
+  "realvuln-vampi": {
+   "file": "api_views/users.py",
+   "line": 40,
+   "cwe": "CWE-204",
+   "occurrences": 1,
+   "trials": [
+    1
+   ],
+   "finding_ids": [
+    "USER-ENUM-REGISTRATION"
+   ],
+   "match_reasons": [
+    "unmatched"
+   ],
+   "gt_ids": []
+  }
+ },
+ "undersupply": [],
+ "selected_h_claims": 24,
+ "sampled_h_occurrences": 28
+}

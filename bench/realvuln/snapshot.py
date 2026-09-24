@@ -30,6 +30,52 @@ import time
 from pathlib import Path
 
 
+class WorkDeadline:
+    """One cell work deadline defined once on the MONOTONIC clock (plan
+    step B.1). Wall timestamps are kept only as audit annotations — never
+    as the live cutoff authority, so an NTP step cannot extend or shrink
+    the work budget."""
+
+    def __init__(self, *, total_seconds: float, clock=time.monotonic,
+                 wall=time.time):
+        if total_seconds <= 0:
+            raise ValueError("total_seconds must be positive")
+        self.total = float(total_seconds)
+        self._clock = clock
+        self._start = clock()
+        self._wall_start = wall()
+
+    def elapsed_s(self) -> float:
+        return self._clock() - self._start
+
+    def remaining_s(self) -> float:
+        return max(0.0, self.total - self.elapsed_s())
+
+    def expired(self) -> bool:
+        return self._clock() >= self._start + self.total
+
+    def wall_ts(self) -> float:
+        """Best-effort wall-clock mapping of 'now' for AUDIT records only."""
+        return self._wall_start + (self._clock() - self._start)
+
+    def deadline_wall_ts(self) -> float:
+        """Wall annotation for the cutoff instant (audit only)."""
+        return self.wall_ts() + self.remaining_s()
+
+    def _expire_for_test(self) -> None:
+        """Force expiry (regression tests for post-cutoff writes)."""
+        self.total = 0.0
+
+    def as_record(self) -> dict:
+        return {
+            "total_s": self.total,
+            "elapsed_s": round(self.elapsed_s(), 3),
+            "remaining_s": round(self.remaining_s(), 3),
+            "expired": self.expired(),
+            "cutoff_wall_ts_annotation": self.deadline_wall_ts(),
+        }
+
+
 def _snapshot_dir(path: Path) -> Path:
     return path.parent / f"{path.name}.snapshots"
 
@@ -50,13 +96,18 @@ def retain_snapshot(
     tags: dict | None = None,
     snapshot_dir: Path | None = None,
     validate_schema: bool = False,
+    captured_at_wall: float | None = None,
+    eligible: bool = True,
 ) -> Path | None:
     """Capture the current file if it is complete and valid.
 
     Stores exactly the bytes that were validated (atomic tmp+rename), so a
     concurrent rewrite can never make the stored bytes differ from the
-    recorded hash. Returns the snapshot path, or None when the file was
-    missing, partial, or invalid (previous snapshots are left intact)."""
+    recorded hash. ``snapshot_dir`` must point at OPERATOR-OWNED storage
+    (outside any agent-writable mount) — snapshots written next to a live
+    agent file are forgeable and are never consulted. Returns the snapshot
+    path, or None when the file was missing, partial, or invalid (previous
+    snapshots are left intact)."""
     path = Path(path)
     try:
         raw = path.read_bytes()
@@ -74,7 +125,9 @@ def retain_snapshot(
     digest = hashlib.sha256(raw).hexdigest()
     snap_dir = Path(snapshot_dir) if snapshot_dir is not None else _snapshot_dir(path)
     snap_dir.mkdir(parents=True, exist_ok=True)
-    captured_at = time.time()
+    captured_at = (
+        time.time() if captured_at_wall is None else captured_at_wall
+    )
     snapshot = snap_dir / f"{int(captured_at * 1000):013d}-{digest[:12]}.json"
     tmp = snap_dir / f".{snapshot.name}.tmp"
     tmp.write_bytes(raw)
@@ -86,6 +139,7 @@ def retain_snapshot(
         "sha256": digest,
         "bytes": len(raw),
         "tags": tags or {},
+        "eligible": bool(eligible),
     }, indent=1, sort_keys=True) + "\n")
     return snapshot
 
@@ -122,7 +176,11 @@ def latest_valid_snapshot(
 ) -> dict | None:
     """Newest retained snapshot captured at or before ``deadline_ts``
     (wall clock), re-validated on selection (hash + JSON + schema).
-    Returns {'path', 'captured_at', 'sha256'} or None."""
+    Returns {'path', 'captured_at', 'sha256'} or None.
+
+    Only snapshots under ``snapshot_dir`` (operator-owned storage) are
+    consulted; a ``<file>.snapshots`` directory next to a live agent file
+    is agent-writable and therefore never trusted."""
     path = Path(path)
     snap_dir = Path(snapshot_dir) if snapshot_dir is not None else _snapshot_dir(path)
     if not snap_dir.exists():
@@ -133,6 +191,8 @@ def latest_valid_snapshot(
         try:
             meta = json.loads(meta_path.read_text())
         except (json.JSONDecodeError, OSError):
+            continue
+        if not meta.get("eligible", True):
             continue
         captured_at = float(meta.get("captured_at", 0))
         if deadline_ts is not None and captured_at > deadline_ts:

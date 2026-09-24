@@ -1,0 +1,67 @@
+{
+ "seed": 20260924,
+ "dev_half": [
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "file": "app.py",
+   "line": 79,
+   "cwe": "CWE-862"
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "file": "sqli/app.py",
+   "line": 23,
+   "cwe": "CWE-209"
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/settings.py",
+   "line": 99,
+   "cwe": "CWE-614"
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 493,
+   "cwe": "CWE-307"
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 583,
+   "cwe": "CWE-1336"
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "file": "app/main.py",
+   "line": 29,
+   "cwe": "CWE-209"
+  },
+  {
+   "repo": "realvuln-vampi",
+   "file": "openapi_specs/openapi3.yml",
+   "line": 16,
+   "cwe": "CWE-306"
+  }
+ ],
+ "diagnostic_half": [
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/vulnerable/views.py",
+   "line": 181,
+   "cwe": "CWE-837"
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 789,
+   "cwe": "CWE-565"
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 1055,
+   "cwe": "CWE-287"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "bytes": 173,
+ "captured_at": 1790246069.9586635,
+ "eligible": true,
+ "sha256": "b31a3d6d320c1ce8acd82666d4950f2a813eae91fa50a848c78d0a1391053582",
+ "source": "/tmp/relfix-synth/exp/attempts/att-5c5349db630d/output/findings.json",
+ "tags": {
+  "arm": "v",
+  "attempt_id": "att-5c5349db630d",
+  "cell_id": "e43a887350749803",
+  "watch": "findings.json"
+ }
+}

@@ -110,6 +110,41 @@ def _source_hash_inputs() -> dict[str, str]:
     return inputs
 
 
+def _runtime_hash_inputs() -> dict[str, str]:
+    """Everything whose bytes determine RUNTIME behavior (plan step D.3):
+    the source surface plus dependency locks and the image-build inputs.
+    Mutable reports/progress logs are deliberately excluded, so a
+    documentation-only edit never invalidates runtime gates."""
+    inputs = _source_hash_inputs()
+    for name in ("pyproject.toml", "uv.lock"):
+        path = CODESEC_ROOT / name
+        if path.is_file():
+            inputs[name] = str(path)
+    return inputs
+
+
+def runtime_identity(spec: dict | None = None) -> dict:
+    """The runtime identity admission evidence must bind to."""
+    inputs = _runtime_hash_inputs()
+    identity = {
+        "runtime_tree_sha256": sha256_tree(inputs),
+        "inputs": sorted(inputs),
+    }
+    if spec:
+        settings = spec.get("settings") or {}
+        identity.update({
+            "image_id": (spec.get("image") or {}).get("image_id"),
+            "benchmark_pin": spec.get("benchmark_pin"),
+            "gateway_url": settings.get("gateway_url"),
+            "effective_request_fingerprint": (
+                (spec.get("effective_request") or {}).get(
+                    "fingerprint_sha256"
+                )
+            ),
+        })
+    return identity
+
+
 def build_manifest(spec: dict, *, experiment_id: str, expected_cells: list[dict],
                    schedule: list[dict]) -> dict:
     source_inputs = _source_hash_inputs()
@@ -162,6 +197,20 @@ def build_manifest(spec: dict, *, experiment_id: str, expected_cells: list[dict]
         "secondary_analyses": spec.get("secondary_analyses", []),
         "image": spec.get("image"),
         "isolation_evidence_sha256": spec.get("isolation_evidence_sha256"),
+        "admission": {
+            "purpose": admission_purpose(spec),
+            "evidence": {
+                name: {
+                    "path": (ref or {}).get("path"),
+                    "sha256": (ref or {}).get("sha256"),
+                }
+                for name, ref in (
+                    spec.get("admission") or {}
+                ).items()
+                if isinstance(ref, dict)
+            },
+        },
+        "runtime": runtime_identity(spec),
         "no_secrets": True,
     }
     canonical = json.dumps(manifest, sort_keys=True, ensure_ascii=False)
@@ -296,23 +345,25 @@ def validate_spec(spec: dict) -> list[str]:
             "settings.max_output_tokens_per_request != "
             "effective_request.max_tokens"
         )
-    scored = bool(spec.get("repos"))
-    if scored:
+    scored = admission_purpose(spec) == "scored"
+    if spec.get("repos"):
         image = spec.get("image")
         if not isinstance(image, dict) or not image.get("image_id"):
             problems.append(
-                "scored freeze requires an immutable image_id "
+                ("scored" if scored else "calibration")
+                + " freeze with repos requires an immutable image_id "
                 "(a mutable tag alone is not admissible)"
             )
-        if not spec.get("isolation_evidence_sha256"):
-            problems.append(
-                "scored freeze requires isolation_evidence_sha256 "
-                "(the signed isolation-suite evidence digest)"
-            )
+        # Isolation/calibration/preflight evidence is enforced by
+        # validate_admission (real file references, contents verified) —
+        # the legacy isolation_evidence_sha256 string is no longer
+        # sufficient NOR required.
         if not spec.get("realvuln_root") and not settings.get(
             "realvuln_root"
         ):
-            problems.append("scored freeze requires realvuln_root")
+            problems.append(
+                "freeze with repos requires realvuln_root"
+            )
     return problems
 
 
@@ -356,6 +407,9 @@ def cmd_freeze(args: argparse.Namespace) -> int:
         )
     spec = json.loads(spec_path.read_text())
     problems = validate_spec(spec)
+    # Admission gate (plan step D): evidence references must resolve to
+    # REAL, verified artifacts bound to this runtime — never a bare hash.
+    problems.extend(validate_admission(spec))
     if problems:
         raise SystemExit(
             "spec failed freeze validation:\n  - " + "\n  - ".join(problems)
@@ -400,6 +454,24 @@ def cmd_freeze(args: argparse.Namespace) -> int:
     (exp / "operator" / "manifest.sha256").write_text(
         manifest["manifest_sha256"] + "\n"
     )
+    # Immutable operator-owned copies of every verified admission evidence
+    # document (plan step D.4): later edits to the originals can never
+    # rewrite what this experiment was admitted on.
+    admission_dir = exp / "operator" / "admission"
+    admission_dir.mkdir()
+    for name, ref in (spec.get("admission") or {}).items():
+        if isinstance(ref, dict) and ref.get("path"):
+            src = Path(ref["path"])
+            if src.is_file():
+                shutil.copyfile(src, admission_dir / f"{name}.json")
+    # Per-input digests so a later drift error can NAME what changed.
+    write_json(
+        exp / "operator" / "runtime-inputs.json",
+        {
+            name: sha256_file(Path(path))
+            for name, path in _runtime_hash_inputs().items()
+        },
+    )
     write_json(
         exp / "operator" / "schedule.json",
         {"seed": manifest["schedule"]["seed"], "blocks": schedule},
@@ -411,6 +483,167 @@ def cmd_freeze(args: argparse.Namespace) -> int:
     print(f"manifest sha256: {manifest['manifest_sha256']}")
     print(f"expected cells: {len(expected_cells)}")
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Admission evidence (plan step D): reference REAL artifacts, verify their
+# contents, and bind them to the runtime identity being frozen.
+# ---------------------------------------------------------------------------
+
+def admission_purpose(spec: dict) -> str:
+    """Explicit purpose wins; otherwise a spec carrying repos is a scored
+    matrix and is held to scored admission — never silently relaxed."""
+    purpose = spec.get("purpose")
+    if purpose in ("calibration", "scored"):
+        return purpose
+    return "scored" if spec.get("repos") else "calibration"
+
+
+def _verify_evidence_reference(
+    ref: object, name: str
+) -> tuple[list[str], dict | None, Path | None]:
+    """Resolve one evidence reference: the file must exist, the recorded
+    digest must match the actual bytes, and the document must parse. A
+    nonempty or all-zero hash string alone is not evidence."""
+    if not isinstance(ref, dict):
+        return ([f"admission evidence {name}: missing reference object"],
+                None, None)
+    path_s = ref.get("path")
+    digest = ref.get("sha256")
+    if not path_s or not isinstance(path_s, str):
+        return ([f"admission evidence {name}: missing path"], None, None)
+    path = Path(path_s)
+    if not isinstance(digest, str) or len(digest) != 64 or (
+        set(digest) - set("0123456789abcdef")
+    ):
+        return ([
+            f"admission evidence {name}: sha256 must be a 64-hex digest "
+            f"(got {digest!r})",
+        ], None, None)
+    if not path.is_file():
+        return ([
+            f"admission evidence {name}: file not found: {path}",
+        ], None, None)
+    actual = sha256_file(path)
+    if actual != digest:
+        return ([
+            f"admission evidence {name}: digest mismatch (recorded "
+            f"{digest[:16]}… != actual {actual[:16]}…)",
+        ], None, None)
+    try:
+        document = json.loads(path.read_text())
+    except json.JSONDecodeError as error:
+        return ([
+            f"admission evidence {name}: corrupt JSON: {error}",
+        ], None, None)
+    if not isinstance(document, dict):
+        return ([
+            f"admission evidence {name}: document is not a JSON object",
+        ], None, None)
+    return ([], document, path)
+
+
+def _check_gates(document: dict, name: str) -> list[str]:
+    """Every gate in an evidence document must be passed — skipped,
+    missing, failed, or not_run gates do not pass."""
+    problems: list[str] = []
+    passed_flag = document.get("passed")
+    status = document.get("status")
+    if passed_flag is not True and status not in ("passed", "completed"):
+        problems.append(
+            f"admission evidence {name}: overall status is neither passed "
+            f"nor completed (passed={passed_flag!r}, status={status!r})"
+        )
+    gates = document.get("gates") or document.get("checks")
+    if isinstance(gates, list):
+        for gate in gates:
+            if not isinstance(gate, dict):
+                continue
+            gate_status = gate.get("status", gate.get("passed"))
+            if gate_status is not True and gate_status != "passed":
+                problems.append(
+                    f"admission evidence {name}: gate "
+                    f"{gate.get('name', '?')} is {gate_status!r}"
+                )
+    return problems
+
+
+def _check_image_binding(document: dict, name: str, spec: dict) -> list[str]:
+    image_id = (spec.get("image") or {}).get("image_id")
+    recorded = document.get("image_id")
+    if recorded is not None and image_id and recorded != image_id:
+        return [
+            f"admission evidence {name}: produced against image "
+            f"{recorded} but the spec freezes {image_id} — stale evidence"
+        ]
+    return []
+
+
+def _check_runtime_binding(document: dict, name: str, spec: dict) -> list[str]:
+    recorded = document.get("runtime_tree_sha256")
+    current = runtime_identity(spec)["runtime_tree_sha256"]
+    if not recorded:
+        return [
+            f"admission evidence {name}: does not record the runtime "
+            "tree hash it was produced under — cannot bind to the frozen "
+            "runtime"
+        ]
+    if recorded != current:
+        return [
+            f"admission evidence {name}: produced under runtime tree "
+            f"{recorded[:16]}… but freezing {current[:16]}… — stale "
+            "evidence"
+        ]
+    return []
+
+
+def validate_admission(spec: dict) -> list[str]:
+    """Freeze admission gate (plan step D.1/D.2). Calibration admission
+    needs valid settings, real isolation evidence, and prerequisites; it
+    cannot require its own future completion. Scored admission
+    additionally requires a completed calibration record and a fully
+    passed preflight, each bound to the runtime identity being frozen."""
+    purpose = admission_purpose(spec)
+    problems: list[str] = []
+    admission = spec.get("admission")
+    if not isinstance(admission, dict):
+        return [
+            f"{purpose} admission requires an 'admission' block with "
+            "evidence file references (a bare hash string is not evidence)"
+        ]
+
+    refs = [("isolation_evidence", admission.get("isolation_evidence"))]
+    if purpose == "scored":
+        refs.append((
+            "calibration_evidence", admission.get("calibration_evidence")
+        ))
+        refs.append((
+            "preflight_record", admission.get("preflight_record")
+        ))
+    for name, ref in refs:
+        ref_problems, document, _path = _verify_evidence_reference(ref, name)
+        problems.extend(ref_problems)
+        if document is None:
+            continue
+        problems.extend(_check_gates(document, name))
+        problems.extend(_check_image_binding(document, name, spec))
+        if name != "isolation_evidence":
+            # Isolation evidence binds via image_id; the other records must
+            # bind the full runtime tree they were produced under.
+            problems.extend(_check_runtime_binding(document, name, spec))
+    if purpose == "scored":
+        calib = admission.get("calibration_evidence")
+        if isinstance(calib, dict) and Path(str(calib.get("path", ""))).is_file():
+            try:
+                document = json.loads(Path(calib["path"]).read_text())
+                if not document.get("experiment_ids"):
+                    problems.append(
+                        "admission evidence calibration_evidence: no "
+                        "experiment ids recorded"
+                    )
+            except (json.JSONDecodeError, OSError):
+                pass
+    return problems
 
 
 # ---------------------------------------------------------------------------
@@ -426,10 +659,18 @@ def _completion_marker(committed_cell: Path) -> Path:
 
 
 def arm_done(committed_cell: Path, *, manifest: dict,
-             arm: str, repo: str, trial: int) -> dict:
+             arm: str, repo: str, trial: int,
+             cell_id: str | None = None,
+             experiment_id: str | None = None) -> dict:
     """Verify completion: marker + artifact hashes + schema shape +
-    matching experiment/config hashes. A leftover file or truncated JSON is
-    NOT completion and must not block an eligible retry."""
+    matching experiment/config/cell identity. A leftover file or truncated
+    JSON is NOT completion and must not block an eligible retry.
+
+    When ``cell_id``/``experiment_id`` are supplied (the shared validity
+    path always supplies them) the marker's OWN identity fields are
+    compared — a marker naming another repo/cell/experiment is a wrong-
+    identity completion even when every artifact hash matches (review
+    finding 3)."""
     marker_path = _completion_marker(committed_cell)
     if not marker_path.is_file():
         return {"done": False, "reason": "missing completion marker"}
@@ -441,6 +682,18 @@ def arm_done(committed_cell: Path, *, manifest: dict,
         return {"done": False, "reason": "config hash mismatch"}
     if marker.get("arm") != arm or marker.get("trial") != trial:
         return {"done": False, "reason": "cell identity mismatch"}
+    if marker.get("repo") != repo:
+        return {"done": False, "reason": "marker repo identity mismatch"}
+    if cell_id is not None and marker.get("cell_id") != cell_id:
+        return {"done": False, "reason": "marker cell_id identity mismatch"}
+    if (
+        experiment_id is not None
+        and marker.get("experiment_id") != experiment_id
+    ):
+        return {
+            "done": False,
+            "reason": "marker experiment identity mismatch",
+        }
     # The primary artifact must be DECLARED (absence of the key is not
     # skippable); the H arm must also declare its secondary export.
     required = ("primary",) if arm == ARM_V else ("primary", "secondary")
@@ -544,6 +797,281 @@ def repo_only(exp: Path, manifest: dict, cell: dict) -> str:
     raise ExperimentError(f"cell {cell['cell_id']} not in manifest")
 
 
+# ---------------------------------------------------------------------------
+# Shared cell validity (plan step C): one check used by BOTH verify and
+# aggregation. Attempt selection (the immutable operational primary) is
+# kept separate from cell/experiment validity: a later protocol
+# invalidation blocks scoring without replacing the primary or rewriting
+# history.
+# ---------------------------------------------------------------------------
+
+#: problem classes: 'integrity' and 'invalid' block verify AND headline;
+#: 'incomplete' withholds the headline (experiment not finished) without
+#: claiming corrupt evidence.
+INTEGRITY = "integrity"
+INVALID = "invalid"
+INCOMPLETE = "incomplete"
+
+
+def cell_validity(
+    exp: Path,
+    manifest: dict,
+    cell: dict,
+    *,
+    ledger: AttemptLedger | None = None,
+) -> dict:
+    """Structured validity of one expected cell.
+
+    Returns {mode, valid, problems, incomplete, marker, state,
+    primary_path} where ``mode`` is one of:
+
+    - ``committed``: valid marker + artifacts + ledger backing. The
+      document is scored and the cell keeps its actual health status.
+    - ``no_output``: inference-bearing terminal failure with NO committed
+      evidence — genuinely empty predictions (operational failure).
+    - ``setup_failed``: retries did not reach inference — the experiment
+      is incomplete; no headline.
+    - ``invalidated`` / ``unaccounted`` / ``wrong_state`` / ``integrity``:
+      see the returned problems.
+    """
+    exp = Path(exp)
+    if ledger is None:
+        ledger = AttemptLedger(
+            exp / "operator" / "attempts.jsonl",
+            experiment_id=manifest["experiment_id"],
+            config_hash=_config_hash(manifest),
+        )
+    committed_cell = exp / "committed" / cell["cell_id"]
+    problems: list[tuple[str, str]] = []
+    incomplete = False
+
+    marker_exists = _completion_marker(committed_cell).is_file()
+    done = arm_done(
+        committed_cell,
+        manifest=manifest,
+        arm=cell["arm"],
+        repo=cell["repo"],
+        trial=cell["trial"],
+        cell_id=cell["cell_id"],
+        experiment_id=manifest["experiment_id"],
+    )
+
+    # Any protocol invalidation anywhere in the cell's history blocks
+    # scoring — regardless of which attempt is the operational primary.
+    records = ledger.records(cell["cell_id"])
+    ends = [r for r in records if r.get("type") == "attempt_end"]
+    invalidated = [
+        r for r in ends if r.get("status") == "invalidated"
+    ]
+    state = ledger.terminal_state(cell["cell_id"])
+
+    if invalidated:
+        problems.append((
+            INVALID,
+            f"cell {cell['cell_id']}: protocol invalidation recorded "
+            f"({invalidated[0].get('reason_code', 'unknown')}) — comparison "
+            "invalidated",
+        ))
+
+    if done["done"]:
+        marker = done["marker"]
+        if state is None:
+            problems.append((
+                INTEGRITY,
+                f"cell {cell['cell_id']}: committed artifact has no "
+                "terminal ledger state",
+            ))
+        else:
+            if state.get("attribution_inconsistent"):
+                problems.append((
+                    INVALID,
+                    f"cell {cell['cell_id']}: inconsistent inference "
+                    "attribution",
+                ))
+            marker_attempt = marker.get("attempt_id")
+            if marker_attempt and state.get("attempt_id") != marker_attempt:
+                problems.append((
+                    INTEGRITY,
+                    f"cell {cell['cell_id']}: committed attempt "
+                    f"{marker_attempt} is not the operational primary "
+                    f"({state.get('attempt_id')})",
+                ))
+            if state.get("status") == "failed_no_output":
+                problems.append((
+                    INTEGRITY,
+                    f"cell {cell['cell_id']}: terminal state records no "
+                    "output, yet committed artifacts exist — inconsistent",
+                ))
+        mode = "committed"
+        valid = not problems
+        return {
+            "mode": mode,
+            "valid": valid,
+            "problems": problems,
+            "incomplete": False,
+            "marker": marker,
+            "state": state,
+            "primary_path": committed_cell / marker["primary_path"],
+        }
+
+    # No valid completion marker.
+    if marker_exists or (
+        committed_cell.exists()
+        and any(committed_cell.iterdir())
+    ):
+        # A completion.json that fails validation, or committed debris
+        # without a commit point, is CORRUPT/INCONSISTENT committed
+        # evidence — never "absence of output".
+        problems.append((
+            INTEGRITY,
+            f"cell {cell['cell_id']}: committed evidence present but "
+            f"invalid ({done['reason']}) — integrity failure",
+        ))
+        return {
+            "mode": "integrity",
+            "valid": False,
+            "problems": problems,
+            "incomplete": False,
+            "marker": None,
+            "state": state,
+            "primary_path": None,
+        }
+
+    if state is None:
+        problems.append((
+            INTEGRITY,
+            f"cell {cell['cell_id']} ({cell['repo']} t{cell['trial']} "
+            f"{cell['arm']}) has no terminal ledger state",
+        ))
+        return {
+            "mode": "unaccounted", "valid": False, "problems": problems,
+            "incomplete": True, "marker": None, "state": None,
+            "primary_path": None,
+        }
+
+    if state.get("attribution_inconsistent") or (
+        state.get("made_inference_requests") is None
+    ):
+        problems.append((
+            INVALID,
+            f"cell {cell['cell_id']}: inference attribution unknown or "
+            "inconsistent — invalid",
+        ))
+        return {
+            "mode": "invalid", "valid": False, "problems": problems,
+            "incomplete": False, "marker": None, "state": state,
+            "primary_path": None,
+        }
+
+    status = state.get("status")
+    if status == "setup_failed":
+        incomplete = True
+        problems.append((
+            INCOMPLETE,
+            f"cell {cell['cell_id']}: setup failure with zero inference "
+            "— experiment incomplete",
+        ))
+        return {
+            "mode": "setup_failed", "valid": False, "problems": problems,
+            "incomplete": True, "marker": None, "state": state,
+            "primary_path": None,
+        }
+    if status == "failed_no_output":
+        # Honest accounted absence: inference happened, no eligible output
+        # was ever committed. NOT a problem — empty predictions.
+        return {
+            "mode": "no_output", "valid": not problems, "problems": problems,
+            "incomplete": False, "marker": None, "state": state,
+            "primary_path": None,
+        }
+    # completed / failed_output terminal state WITHOUT valid committed
+    # artifacts: the ledger says output existed, so missing evidence is an
+    # integrity failure, not an empty prediction.
+    problems.append((
+        INTEGRITY,
+        f"cell {cell['cell_id']}: terminal state {status} without valid "
+        "committed output — integrity failure",
+    ))
+    return {
+        "mode": "wrong_state", "valid": False, "problems": problems,
+        "incomplete": False, "marker": None, "state": state,
+        "primary_path": None,
+    }
+
+
+def _drift_check(exp: Path, manifest: dict, *, pending_cells: list[dict]) -> None:
+    """Runtime identity recheck before admitting NEW cells (plan step
+    D.5), including on resume. Drift (or an unresolvable pinned image)
+    stops new admissions with a specific error — never a silent refreeze
+    and never a continuation under changed code. Complete experiments
+    have no pending cells, so historical verification/reanalysis is
+    unaffected."""
+    if not pending_cells:
+        return
+    runtime = manifest.get("runtime") or {}
+    recorded = runtime.get("runtime_tree_sha256")
+    if not recorded:
+        raise SystemExit(
+            "runtime drift check: frozen manifest predates runtime "
+            "identity binding; cannot admit new cells — refreeze with a "
+            "new experiment id instead of editing this one"
+        )
+    current_inputs = _runtime_hash_inputs()
+    current = sha256_tree(current_inputs)
+    if current != recorded:
+        recorded_inputs = set(runtime.get("inputs") or [])
+        current_names = set(current_inputs)
+        changed = sorted(
+            name for name in recorded_inputs & current_names
+            if sha256_file(Path(current_inputs[name])) != _recorded_input_digest(
+                exp, name
+            )
+        )
+        added = sorted(current_names - recorded_inputs)
+        removed = sorted(recorded_inputs - current_names)
+        detail = ""
+        if changed or added or removed:
+            detail = (
+                f" (changed: {changed[:5]}, added: {added[:5]}, "
+                f"removed: {removed[:5]})"
+            )
+        raise SystemExit(
+            f"runtime drift: current runtime tree {current[:16]}… != frozen "
+            f"{recorded[:16]}…{detail} — refusing to admit new cells under "
+            "changed code; freeze a new experiment instead"
+        )
+    image_id = (manifest.get("image") or {}).get(
+        "resolved_image_id"
+    ) or (manifest.get("image") or {}).get("image_id")
+    if image_id:
+        from bench.realvuln.isolation import resolve_image_id
+
+        try:
+            resolved = resolve_image_id(image_id)
+        except Exception as error:  # noqa: BLE001
+            raise SystemExit(
+                f"runtime drift check: pinned image {image_id} no longer "
+                f"resolves locally ({error}) — cannot admit new cells"
+            ) from error
+        if resolved != image_id:
+            raise SystemExit(
+                f"runtime drift check: pinned image {image_id} now resolves "
+                f"to {resolved} — refusing to admit new cells"
+            )
+
+
+def _recorded_input_digest(exp: Path, name: str) -> str:
+    """Digest of a runtime input recorded at freeze time (from the
+    operator-owned evidence copy in operator/runtime-inputs.json)."""
+    path = exp / "operator" / "runtime-inputs.json"
+    if path.is_file():
+        try:
+            return (json.loads(path.read_text()) or {}).get(name, "?")
+        except json.JSONDecodeError:
+            return "?"
+    return "?"
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     exp = Path(args.experiment).resolve()
     if not exp.is_dir():
@@ -566,6 +1094,29 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
     from bench.realvuln.executor import execute_block
 
+    # Which cells still need work? The runtime identity gate applies to
+    # THOSE admissions (D.5) — completed cells keep their history.
+    pending: list[dict] = []
+    for block in schedule["blocks"]:
+        for arm in block["arm_sequence"]:
+            cell = {
+                "repo": block["repo"], "trial": block["trial"], "arm": arm,
+                "cell_id": cell_id_of(block["repo"], block["trial"], arm),
+            }
+            committed_cell = exp / "committed" / cell["cell_id"]
+            done = arm_done(
+                committed_cell, manifest=manifest, arm=arm,
+                repo=cell["repo"], trial=cell["trial"],
+                cell_id=cell["cell_id"],
+                experiment_id=manifest["experiment_id"],
+            )
+            if done["done"]:
+                continue
+            if ledger.terminal_state(cell["cell_id"]):
+                continue  # accounted terminal failure — no new admission
+            pending.append(cell)
+    _drift_check(exp, manifest, pending_cells=pending)
+
     failures: list[str] = []
     for block in schedule["blocks"]:
         for arm in block["arm_sequence"]:
@@ -577,6 +1128,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             done = arm_done(
                 committed_cell, manifest=manifest, arm=arm,
                 repo=cell["repo"], trial=cell["trial"],
+                cell_id=cell["cell_id"],
+                experiment_id=manifest["experiment_id"],
             )
             if done["done"]:
                 continue  # idempotent resume
@@ -599,10 +1152,35 @@ def cmd_run(args: argparse.Namespace) -> int:
 # verify
 # ---------------------------------------------------------------------------
 
+def manifest_assignment_problems(manifest: dict) -> list[str]:
+    """Structural problems with the frozen repo/trial/arm product:
+    duplicate or missing assignments (plan step C.2)."""
+    problems: list[str] = []
+    ids = [c["cell_id"] for c in manifest["expected_cells"]]
+    if len(ids) != len(set(ids)):
+        problems.append("duplicate cell assignments in manifest")
+    keys = [
+        (c["repo"], c["trial"], c["arm"]) for c in manifest["expected_cells"]
+    ]
+    if len(keys) != len(set(keys)):
+        problems.append(
+            "duplicate (repo, trial, arm) assignments in manifest"
+        )
+    for cell in manifest["expected_cells"]:
+        if cell.get("cell_id") != cell_id_of(
+            cell["repo"], cell["trial"], cell["arm"]
+        ):
+            problems.append(
+                f"cell_id does not match (repo, trial, arm) for "
+                f"{cell['repo']} t{cell['trial']} {cell['arm']}"
+            )
+    return problems
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     exp = Path(args.experiment).resolve()
     manifest = load_manifest(exp)
-    problems: list[str] = []
+    problems: list[str] = list(manifest_assignment_problems(manifest))
     expected = {c["cell_id"]: c for c in manifest["expected_cells"]}
     committed_dir = exp / "committed"
     seen: set[str] = set()
@@ -615,64 +1193,20 @@ def cmd_verify(args: argparse.Namespace) -> int:
         if cell_dir.name in seen:
             problems.append(f"duplicate committed cell: {cell_dir.name}")
         seen.add(cell_dir.name)
-        cell = expected[cell_dir.name]
-        result = arm_done(
-            cell_dir, manifest=manifest, arm=cell["arm"],
-            repo=cell["repo"], trial=cell["trial"],
-        )
-        if not result["done"]:
-            problems.append(f"{cell_dir.name}: {result['reason']}")
     ledger = AttemptLedger(
         exp / "operator" / "attempts.jsonl",
         experiment_id=manifest["experiment_id"],
         config_hash=_config_hash(manifest),
     )
-    # A cell is missing only when it is neither committed-valid NOR
-    # ledger-accounted — a terminal failure is an accounted outcome, not
-    # a missing artifact.
-    missing = sorted(
-        cell_id for cell_id in set(expected) - seen
-        if not ledger.cell_accounted(cell_id)
-    )
-    if missing:
-        problems.append(
-            f"{len(missing)} expected cells neither committed nor "
-            f"ledger-accounted: {missing[:5]}…"
-        )
+    # One shared validity check per expected cell (plan step C): verify
+    # fails on integrity/invalidity. Incompleteness (a cell still pending
+    # or setup-failed before inference) is an accounted outcome, not
+    # corrupt evidence — it does not fail this command.
     for cell_id, cell in expected.items():
-        if not ledger.cell_accounted(cell_id):
-            problems.append(f"{cell_id}: no terminal ledger state")
-            continue
-        state = ledger.terminal_state(cell_id)
-        if state.get("attribution_inconsistent"):
-            problems.append(
-                f"{cell_id}: missing/inconsistent inference attribution"
-            )
-        if state.get("made_inference_requests") is None:
-            problems.append(
-                f"{cell_id}: inference attribution unknown (no trusted "
-                "gateway record)"
-            )
-        # A committed cell must be backed by the ledger: the marker's
-        # attempt must have a terminal record (committed-but-ledgerless is
-        # not a valid cell).
-        marker_path = _completion_marker(exp / "committed" / cell_id)
-        if marker_path.is_file():
-            try:
-                marker = json.loads(marker_path.read_text())
-            except json.JSONDecodeError:
-                marker = {}
-            attempt_id = marker.get("attempt_id")
-            attempts = {
-                r["attempt_id"]
-                for r in ledger.records(cell_id)
-                if r.get("type") == "attempt_end"
-            }
-            if attempt_id not in attempts:
-                problems.append(
-                    f"{cell_id}: committed attempt {attempt_id} has no "
-                    "terminal ledger record"
-                )
+        validity = cell_validity(exp, manifest, cell, ledger=ledger)
+        for cls, message in validity["problems"]:
+            if cls != INCOMPLETE:
+                problems.append(message)
     if problems:
         print(f"verify FAILED ({len(problems)} problems):", file=sys.stderr)
         for problem in problems:

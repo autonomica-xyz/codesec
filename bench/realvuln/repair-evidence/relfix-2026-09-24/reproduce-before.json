@@ -1,0 +1,97 @@
+{
+  "recomputed_matrix": {
+    "headline": {
+      "mean_f3_h": 37.0,
+      "mean_f3_v": 27.3,
+      "trial_f3_h": [
+        35.2,
+        36.4,
+        39.5
+      ],
+      "trial_f3_v": [
+        19.4,
+        32.8,
+        29.8
+      ],
+      "precision_h": 0.5336,
+      "precision_v": 0.6847,
+      "recall_h": 0.358,
+      "recall_v": 0.2572
+    },
+    "decision": {
+      "precedence": "does_not_meet_success_criterion",
+      "positive_rule": false,
+      "rule_booleans": {
+        "f3_h_geq_f3v_plus_5": true,
+        "recall_h_geq_recall_v_minus_0.05": true,
+        "precision_h_geq_precision_v_plus_0.10": false,
+        "fewer_h_fp_repos_geq_4_of_6_in_geq_2_of_3_trials": false,
+        "fp_win_repos_per_trial": {
+          "1": 0,
+          "2": 0,
+          "3": 2
+        }
+      },
+      "negative_condition_original": "H final has fewer FPs than Pi on fewer than 4 slugs in fewer than 2 trials (the original report's negative condition), reported separately from the mechanically computed rule"
+    },
+    "problems": [],
+    "terminal_status_counts": {
+      "completed": 34,
+      "failed_output": 2
+    },
+    "usage": {
+      "records_found": 8242,
+      "records_missing_unknown": 0,
+      "note": "missing usage is unknown, never zero cost"
+    }
+  },
+  "source_hash": {
+    "frozen": "f32bcba43e11eef0681ebf1eb347934dde21d76847c4b3aeb4a0db54fc4a5525",
+    "current": "86ed276764c91a404db736e48925989c1aedd5acad81a15361ba02852fcc0b84"
+  },
+  "usage_by_arm": {
+    "v": {
+      "admission": 124,
+      "terminal": 124,
+      "prompt_tokens": 821457,
+      "completion_tokens": 47043,
+      "total_tokens": 868500
+    },
+    "h": {
+      "admission": 8118,
+      "terminal": 8118,
+      "prompt_tokens": 48726523,
+      "completion_tokens": 2351732,
+      "total_tokens": 51078255
+    }
+  },
+  "late_invalidation": {
+    "verify_exit": 0,
+    "verify_message": "verify OK: 36 cells complete and accounted",
+    "headline_present": true,
+    "problems": []
+  },
+  "corrupt_committed_failed_output": {
+    "verify_exit": 1,
+    "verify_message": "verify FAILED (1 problems):\n  358d16220e1b1dda: truncated primary artifact",
+    "headline_present": true,
+    "problems": []
+  },
+  "wrong_marker_identity": {
+    "verify_exit": 0,
+    "verify_message": "verify OK: 36 cells complete and accounted",
+    "headline_present": true,
+    "problems": []
+  },
+  "post_deadline_output": {
+    "h": {
+      "exported_count": 1
+    },
+    "v": {
+      "exported_count": 1
+    }
+  },
+  "freeze_without_real_gate_evidence": {
+    "exit_code": 0
+  }
+}

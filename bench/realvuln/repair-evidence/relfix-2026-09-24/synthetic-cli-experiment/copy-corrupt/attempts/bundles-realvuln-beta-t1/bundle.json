@@ -1,0 +1,14 @@
+{
+  "slug": "realvuln-beta",
+  "trial": 1,
+  "commit_sha": "deadbeef",
+  "app_head": null,
+  "app_pin_verified": false,
+  "digest": "bb197d8457f2592e2691463d6b91efad845bd170fc7b1648849044c9e75c83a1",
+  "dropped_paths": [],
+  "canary": null,
+  "scored": true,
+  "gt_locations_checked": 1,
+  "gt_label_entries": 1,
+  "prepared_at": 1790246071.49619
+}

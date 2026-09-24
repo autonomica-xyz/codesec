@@ -1,0 +1,92 @@
+{
+ "ran_at": 1790247133.6777651,
+ "checks": [
+  {
+   "name": "host_home_absent",
+   "passed": true,
+   "exit_code": 1,
+   "observed": "PROBE_RAN\nPROBE_RAN\ncat: /home/user/.bashrc: No such file or directory\ncat: /root/.bashrc: Permission denied\ncat: /home/user/.bashrc: No such file or directory\ncat: /root/.bashrc: Permission denied"
+  },
+  {
+   "name": "operator_map_absent",
+   "passed": true,
+   "exit_code": 1,
+   "observed": "PROBE_RAN\nPROBE_RAN\ncat: /work/operator/map.json: No such file or directory\ncat: /work/operator/map.json: No such file or directory"
+  },
+  {
+   "name": "gt_labels_absent",
+   "passed": true,
+   "exit_code": 1,
+   "observed": "PROBE_RAN\nPROBE_RAN\ncat: /work/ground-truth.json: No such file or directory\ncat: /work/ground-truth.json: No such file or directory"
+  },
+  {
+   "name": "prior_runs_absent",
+   "passed": true,
+   "exit_code": 2,
+   "observed": "PROBE_RAN\nPROBE_RAN\nls: cannot access '/work/realvuln-runs': No such file or directory\nls: cannot access '/work/realvuln-runs': No such file or directory"
+  },
+  {
+   "name": "codesec_checkout_absent",
+   "passed": true,
+   "exit_code": 2,
+   "observed": "PROBE_RAN\nPROBE_RAN\nls: cannot access '/home/user/g/codesec/bench': No such file or directory\nls: cannot access '/home/user/g/codesec/bench': No such file or directory"
+  },
+  {
+   "name": "docker_socket_absent",
+   "passed": true,
+   "exit_code": 2,
+   "observed": "PROBE_RAN\nPROBE_RAN\nls: cannot access '/var/run/docker.sock': No such file or directory\nls: cannot access '/var/run/docker.sock': No such file or directory"
+  },
+  {
+   "name": "sudo_absent",
+   "passed": true,
+   "exit_code": 1,
+   "observed": "PROBE_RAN\nPROBE_RAN"
+  },
+  {
+   "name": "host_pid_hidden",
+   "passed": true,
+   "observed": "PROBE_RAN\ncontainer_pid_namespace\nPROBE_RAN\ncontainer_pid_namespace"
+  },
+  {
+   "name": "host_root_via_proc_absent",
+   "passed": true,
+   "observed": "PROBE_RAN\ncontainer_root_only\nPROBE_RAN\ncontainer_root_only"
+  },
+  {
+   "name": "egress_blocked",
+   "passed": true,
+   "observed": "PROBE_RAN\n000EGRESS_BLOCKED\nPROBE_RAN\n000EGRESS_BLOCKED"
+  },
+  {
+   "name": "target_readonly",
+   "passed": true,
+   "observed": "PROBE_RAN\nWRITE_BLOCKED\nPROBE_RAN\nWRITE_BLOCKED\nbash: line 1: /work/target/.write-probe: Read-only file system\nbash: line 1: /work/target/.write-probe: Read-only file system"
+  },
+  {
+   "name": "rootfs_readonly",
+   "passed": true,
+   "observed": "PROBE_RAN\nWRITE_BLOCKED\nPROBE_RAN\nWRITE_BLOCKED\nbash: line 1: /usr/.write-probe: Read-only file system\nbash: line 1: /usr/.write-probe: Read-only file system"
+  },
+  {
+   "name": "read_target",
+   "passed": true,
+   "observed": "PROBE_RAN\nPROBE_RAN"
+  },
+  {
+   "name": "write_scratch",
+   "passed": true,
+   "observed": "PROBE_RAN\nok\nPROBE_RAN\nok"
+  },
+  {
+   "name": "write_output",
+   "passed": true,
+   "observed": "PROBE_RAN\nok\nPROBE_RAN\nok"
+  }
+ ],
+ "passed": true,
+ "kind": "isolation-suite-record",
+ "image_id": "sha256:78d7e42bb3a52f66f27ed6988d9ccfcbab046c4b4a21c27d3e059749ba5a8820",
+ "image_tag": "codesec-iso-relfix-deadgw-20260924",
+ "runtime_tree_sha256": "d1b75b58a8918032f20630b3d572e2bdd5624fc211833f639b620912f6f847d7"
+}

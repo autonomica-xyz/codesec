@@ -1049,3 +1049,128 @@ attempts (kept archived).
   (excludes foreign/review traffic from shared records file). Aggregate
   regenerated — decision unchanged: does_not_meet_success_criterion.
 - Report finalized: bench/RESULTS-HARNESS-VS-PI-RELIABILITY-2026-09-23.md.
+
+---
+
+# PLAN-RELIABILITY-FIXES-AND-FP-REVIEW-2026-09-24 — progress log
+
+Plan: `bench/PLAN-RELIABILITY-FIXES-AND-FP-REVIEW-2026-09-24.md`.
+Evidence root: `bench/realvuln/repair-evidence/relfix-2026-09-24/`.
+Starting state: HEAD `5cd7d2429232a0e627613bbf5bf617e6623aef37`, dirty worktree preserved
+(`git-status.txt`, `tracked-diff.patch` 305,948 bytes).
+
+## Step A — Preserve and reproduce — COMPLETE (2026-09-24)
+
+| Command | Exit | Evidence |
+|---|---|---|
+| `.venv/bin/python bench/realvuln/repair-evidence/relfix-2026-09-24/archive_source.py` | 0 | `source-archive.tar.gz` (240 files, sha256 `2adc7a361f703b6675d51c9b9902d4b1244b1a719a6ee979feb49c54b6d2476e`), `source-hashes.json` (per-file sha256 + tracked diff inline). Allowlist: codesec/, prompts/, schemas/, config/, bench/realvuln (+evidence), bench/probe, bench/corpus, tests/, pyproject.toml, uv.lock, score.py, bench docs/plans/results; excludes secrets (.env*), venvs, caches, run outputs, bundled repos. |
+| `git diff HEAD` / `git status --short` / `git rev-parse HEAD` | 0 | `tracked-diff.patch`, `tracked-diff-stat.txt`, `git-status.txt`, `HEAD` |
+| `PYTHONPATH=. .venv/bin/python bench/realvuln/repair-evidence/review-2026-09-24/reproduce.py` (before edits) | 0 | `reproduce-before.json` — all five review defects reproduce: late invalidation verify-exit 0 + headline; corrupt committed failed-output headline `problems: []`; wrong repo/cell marker accepted; post-deadline export 1 finding BOTH arms; freeze with all-zero isolation hash exit 0. |
+| current-vs-frozen hashes | 0 | `current-code-hashes.json`: current tree `86ed2767…`, frozen matrix `f32bcba4…` (post-run edits predate this plan; recorded BEFORE any repair edit) |
+
+Defects → regression tests: `tests/test_realvuln_reliability_fixes.py` (36
+tests) + `tests/test_advisory_envelope_repair.py` (11 tests). Red before the
+repairs; green after. Historical `review-2026-09-24/reproduce.py` kept
+intact — after the repairs it aborts with `TypeError: unexpected keyword
+argument 'deadline_ts'` at the post-deadline probe, i.e. exactly where the
+operation it expected to succeed is now correctly rejected
+(`reproduce-after.txt`).
+
+## Steps B–E — Repairs — COMPLETE (2026-09-24)
+
+- **B (one work deadline, eligible output only)**: `WorkDeadline`
+  (monotonic) in `bench/realvuln/snapshot.py`; `run_arm_container` passes
+  the REMAINING work budget (no `+CLEANUP_GRACE_S`); `_SnapshotWatcher`
+  watches BOTH arms' output files (H report/checkpoint/confirmed, V
+  findings) storing captures under operator-owned
+  `exp/attempts/<id>/snapshots/` (never agent-writable); export selects
+  ONLY newest eligible operator-owned capture (hash+schema re-validated);
+  early normal completion captures final bytes inside the work budget;
+  timed-out/controller-killed containers get no final capture (stop-grace
+  writes are never eligible). Terminal accounting preserved on every path.
+- **C (shared validity)**: `cell_validity()` in `experiment.py` used by
+  BOTH `cmd_verify` and `aggregate_experiment`; `arm_done` now compares
+  marker repo/cell_id/experiment_id; `manifest_assignment_problems()`;
+  any later invalidation blocks scoring without replacing the primary;
+  committed-but-invalid evidence = integrity failure (never empty
+  predictions); honest no-output failure still scores empty predictions;
+  wrong primary / unknown attribution / corrupt artifacts block the
+  headline for both commands.
+- **D (admission evidence)**: explicit calibration/scored purpose
+  (`admission_purpose`); `validate_admission()` resolves evidence FILE
+  references (path+sha256, contents parsed, gates must be passed, image +
+  runtime-tree binding; skipped/failed/not_run gates never pass);
+  `_runtime_hash_inputs()` = source surface + `pyproject.toml` +
+  `uv.lock` (docs/reports excluded); manifest records `runtime` identity +
+  immutable evidence copies under `operator/admission/` +
+  `operator/runtime-inputs.json`; `cmd_run` drift-gates NEW cell
+  admissions (completed experiments unaffected).
+- **E (advisory-data failure + health)**: root cause of both saved
+  failures established by replay (`failing-responses.json`,
+  `replay-fixtures.json`): malformed JSON envelope (bracket mismatch in
+  the findings array) → `extract_json` salvaged the inner `gaps_observed`
+  array as the payload → misleading `<root> is not of type object` error
+  → unfixable repair turn. Repairs: `repair_json_envelope()` +
+  `diagnose_envelope()` (`codesec/json_utils.py`) — deterministic
+  bracket completion/truncation with every fix recorded; `_validated_payload()`
+  dispatch guard (object-root schemas never accept nested fragments;
+  errors name the envelope problem); advisory normalization flattens
+  nested gap arrays (equivalent) and QUARANTINES un-preservable advisory
+  items (recorded, never silent); invalid findings envelopes are never
+  coerced into empty reports; `AgentResult.repairs` → hunt stage records a
+  `degraded` stage-health event; executor reads terminal stage health
+  from `run/state.db` (`_h_stage_health`) — exit 0 without complete clean
+  health ⇒ `failed_output`/`degraded_stage_health` (excluded from
+  clean-completion rate; output still committed + scored).
+
+Tests: `tests/test_realvuln_reliability_fixes.py` 36 passed;
+`tests/test_advisory_envelope_repair.py` 11 passed (both saved failures
+replay without loss: findings + advisories preserved, intervention
+recorded); full suite `545 passed, 14 skipped` (unchanged skip set: 13
+auth-CLI, 1 live-bench marker).
+
+Post-fix reverification of all five review probes:
+`reverify.py` → `reverify-output.json` (exit 0): late invalidation
+verify-exit 1 + no headline; corrupt committed failed-output verify-exit
+1 + 2 integrity problems + no headline; wrong marker identity verify-exit
+1 + no headline; post-deadline output REJECTED for both arms;
+ungated freeze exit 1.
+
+## Step F — in progress
+
+## Step F — Correct the record and prove actual-client failure handling — COMPLETE (2026-09-24)
+
+| Command | Exit | Evidence |
+|---|---|---|
+| results-doc correction | 0 | dated CORRECTION block in `RESULTS-HARNESS-VS-PI-RELIABILITY-2026-09-23.md` (stale image citations → `calib-deadline-20260923-09` / `calib-neterror-20260923-07`; sign-off language withdrawn) |
+| `PYTHONPATH=. … synthetic_cli_run.py /tmp/relfix-synth` | 0 | `synthetic-cli-results.json` + preserved experiment `synthetic-cli-experiment/`: freeze 0, run 1 (failures present), verify 0, aggregate 0 w/ headline (official matcher); late-invalidation → verify 1/aggregate 1; corrupt committed → verify 1/aggregate 1 |
+| image builds | 0 | `codesec-iso-relfix-20260924` = `sha256:f08faaa8aaa775ead2aa54a7c8c540d63c6607a14033a180359fc3b3a87562ad`; `codesec-iso-relfix-deadgw-20260924` = `sha256:78d7e42bb3a52f66f27ed6988d9ccfcbab046c4b4a21c27d3e059749ba5a8820`; isolation suites 16/16 and 15/15 (`iso-evidence-relfix*.json`, runtime-tree bound) |
+| isolation-suite test-tag audit fix | 0 | `test_agent_image_contains_allowlist_only` now uses unique `codesec-iso-test-*`; shared `codesec-iso:latest` tag restored to the matrix-pinned image |
+| actual-client calibration runs | 0/1 | `f-evidence.json`: hs-01 clean smoke+parity (H completed 430 s, health clean=true, 5 findings; V 15.7 s, 6); hr-01 nonempty timeout recovery (211.9/240 s, 3 findings via operator-owned checkpoint capture, degraded); dh-03 H deadline 121.5/150 s checkpoint capture; dv-01 V deadline mid-flight 9 s → failed_no_output (paired, not equated); net-01 dead endpoint → attribution unknown by design (verify FAILED); dh-01 dead upstream w/ trusted records (H bounded 4-retry backoff). Usage recorded per experiment. 0 leftover owned containers after every run |
+| final full suite | 0 | 555 passed, 14 skipped (0:08:28); skips outstanding: 13 auth-CLI, 1 live-bench |
+
+Config endpoint temporarily repointed at test aliases during builds/runs and
+restored byte-identical afterwards (`git diff config/…yaml` empty). Shared
+gateway `codesec-gateway` never disconnected; matrix gateway records
+untouched (headline recomputes exactly).
+
+## Steps G+H — FP review and the one quality change — COMPLETE (2026-09-24)
+
+- Selection BEFORE source inspection: `fp-sample-manifest.json` (seed
+  20260924; 24/198 unique H claims, 28/218 occurrences, no undersupply; 6
+  Pi comparison claims). Classification: `fp_classify.py` →
+  `fp-classifications.json`; narrative `fp-review.md`.
+- Result: reporting/matching 10, real-outside-labels 5, duplicate 5,
+  incorrect-claim 4, unresolved 0. Dominant actionable cause:
+  location/CWE reporting errors.
+- One change: `_canonical_cwe` in `codesec/stages/report.py` (dev half
+  only; seeded split `h-split.json`). Offline replay `h-replay.json`:
+  TP +4, FP −4, zero TP regressions, controls untouched, reserved half
+  untouched (uncertainty reported, no further tuning). Regression tests
+  `tests/test_cwe_canonicalization.py`.
+- Go/no-go: **NO-GO** for a new scored matrix now — see
+  `RESULTS-RELIABILITY-FIXES-AND-FP-REVIEW-2026-09-24.md` §7.
+
+Post-repair source_tree_sha256: `9632dded2bab8f23c2125f048840f466cfb3cf9d087f2ff9f75a737e4920ce03`;
+neither it nor any post-run hash equals the frozen matrix code (provenance
+distinction maintained).

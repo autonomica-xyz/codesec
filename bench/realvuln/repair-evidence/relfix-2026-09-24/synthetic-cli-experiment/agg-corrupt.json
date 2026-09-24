@@ -1,0 +1,127 @@
+{
+  "experiment_id": "exp",
+  "manifest_sha256": "e2c18007e79579b1b0f7eb6d145b9f35f29aabaaf82cac8d2871a8c94d87a888",
+  "expected_cells": 4,
+  "repos": [
+    "realvuln-alpha",
+    "realvuln-beta"
+  ],
+  "trials": [
+    1
+  ],
+  "cells": {
+    "realvuln-alpha#t1#h": {
+      "cell_id": "f4fda7b9ed10ee5a",
+      "arm": "h",
+      "source": "integrity"
+    },
+    "realvuln-alpha#t1#v": {
+      "cell_id": "e43a887350749803",
+      "arm": "v",
+      "source": "committed",
+      "attempt_id": "att-5c5349db630d",
+      "degraded": "failed_output",
+      "reason_code": "deadline_recovered_output",
+      "counts": {
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "fp_taxonomy": {
+        "labeled_decoy": 0,
+        "duplicate_positive_match": 0,
+        "unmatched": 0
+      },
+      "agent_authored": true
+    },
+    "realvuln-beta#t1#h": {
+      "cell_id": "1add34abf2a568d5",
+      "arm": "h",
+      "source": "committed",
+      "attempt_id": "att-df4253fcb3ac",
+      "degraded": "failed_output",
+      "reason_code": "deadline_recovered_output",
+      "counts": {
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "fp_taxonomy": {
+        "labeled_decoy": 0,
+        "duplicate_positive_match": 0,
+        "unmatched": 0
+      },
+      "agent_authored": true
+    },
+    "realvuln-beta#t1#v": {
+      "cell_id": "7d5528755b2d69f1",
+      "arm": "v",
+      "source": "operational_failure",
+      "output_failure": true,
+      "counts": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "tn": 0
+      },
+      "fp_taxonomy": {
+        "labeled_decoy": 0,
+        "duplicate_positive_match": 0,
+        "unmatched": 0
+      },
+      "agent_authored": false
+    }
+  },
+  "per_trial": {
+    "1": {
+      "v": {
+        "tp": 1,
+        "fp": 0,
+        "fn": 1,
+        "tn": 0,
+        "precision": 1.0,
+        "recall": 0.5,
+        "f3_score": 52.6,
+        "n_repos": 2
+      }
+    }
+  },
+  "headline": null,
+  "decision": {
+    "precedence": "invalid_or_incomplete",
+    "positive_rule": null,
+    "rule_booleans": null,
+    "negative_condition_original": null
+  },
+  "problems": [
+    "cell f4fda7b9ed10ee5a: committed evidence present but invalid (truncated primary artifact) \u2014 integrity failure",
+    "trial 1 arm h: no counts for ['realvuln-alpha'] (cannot pool a partial trial)"
+  ],
+  "fp_taxonomy_total": {
+    "labeled_decoy": 0,
+    "duplicate_positive_match": 0,
+    "unmatched": 0
+  },
+  "terminal_status_counts": {
+    "completed": 1,
+    "failed_output": 2,
+    "failed_no_output": 1
+  },
+  "clean_completion_rate": 0.25,
+  "complete_pair_diagnostic": {
+    "note": "survivorship-prone subset; diagnostic only",
+    "sample_sizes": {
+      "trial1": 1
+    },
+    "excluded": [
+      "realvuln-alpha#t1"
+    ]
+  },
+  "usage": {
+    "records_found": 0,
+    "records_missing_unknown": 0,
+    "note": "missing usage is unknown, never zero cost"
+  }
+}

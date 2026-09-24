@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import json
 import logging
+import re
 from pathlib import Path
 
 from codesec.contracts import StageContractError
@@ -195,10 +196,67 @@ def _trace_annotation(trace: dict | None) -> dict:
     }
 
 
+_DEBUG_CONFIG_RE = re.compile(r"debug\s*=\s*true", re.IGNORECASE)
+
+
+def _canonical_cwe(f) -> str | None:
+    """Evidence-to-report CWE canonicalization (2026-09-24 plan step H).
+
+    Deterministic, content-keyed mapping of the finding's OWN evidence to
+    the canonical CWE for the demonstrated weakness class. Developed from
+    the reserved dev half of the sampled FP review; never selects CWEs
+    from ground truth at execution time. Narrow by design — no match ⇒
+    the model's CWE stands.
+
+    - A template/expression engine that EVALUATES code (ImageMath.eval,
+    eval/exec in an SSTI context) is code injection: report the canonical
+    CWE-94 rather than the rendering-specific CWE-1336.
+    - A brute-forceable LOW-ENTROPY AUTHENTICATION FACTOR (OTP/PIN leaked
+    to the response or a tiny code space) is improper authentication
+    (CWE-287); CWE-307 stays for genuine missing-rate-limit findings.
+    - A debug/dev-mode CONFIG flag reported as the weakness is a
+    misconfiguration (CWE-16); CWE-209 stays for observed error-message
+    disclosure at an error-rendering site.
+    """
+    cwe = (f.raw_json.get("cwe") or "").upper()
+    vuln_class = (f.vuln_class or "").lower()
+    text = " ".join([
+        (f.description or ""), (f.evidence or ""),
+    ]).lower()
+    if not cwe:
+        return None
+    if cwe == "CWE-1336" and vuln_class == "ssti" and any(
+        marker in text for marker in ("imagemath", "eval(", "exec(")
+    ):
+        return "CWE-94"
+    if (
+        cwe == "CWE-307"
+        and vuln_class in {"auth_bypass", "logic_chain"}
+        and any(m in text for m in ("otp", "one-time", "pin"))
+        and any(
+            m in text
+            for m in ("rendered", "response", "3-digit", "digit", "brute")
+        )
+    ):
+        return "CWE-287"
+    if (
+        cwe == "CWE-209"
+        and vuln_class in {"insecure_configuration", "information_disclosure"}
+        and _DEBUG_CONFIG_RE.search(f.evidence or "")
+    ):
+        # The reported weakness is the debug/dev-mode CONFIG STATEMENT
+        # itself (evidence is the `debug=True` code), not an observed
+        # error-rendering page — the canonical weakness class for a
+        # shipped debug flag is misconfiguration.
+        return "CWE-16"
+    return None
+
+
 def _finding_report_entry(
     f, trace: dict | None, *, variants: list[str] | None = None
 ) -> dict:
     sev = _effective_severity(f)
+    canonical = _canonical_cwe(f)
     entry = {
         "finding_id": f.finding_id,
         "title": f"{f.vuln_class} in {f.file}",
@@ -213,7 +271,8 @@ def _finding_report_entry(
         "recommendation": (
             "Review the sink and add input validation / use a safe API."
         ),
-        **({"cwe": f.raw_json["cwe"]} if f.raw_json.get("cwe") else {}),
+        **({"cwe": canonical or f.raw_json["cwe"]}
+           if f.raw_json.get("cwe") else {}),
         **({"production_viable": pv}
            if (pv := _production_viable(f)) is not None else {}),
     }

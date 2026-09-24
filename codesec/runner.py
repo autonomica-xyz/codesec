@@ -77,6 +77,10 @@ class AgentResult:
     session_id: str | None
     artifact_path: Path
     repair_used: bool
+    #: Deterministic output interventions applied by the engine (envelope
+    #: bracket repair, advisory quarantine). Recorded so stage health can
+    #: show degradation instead of a silent "clean" pass (plan step E.5).
+    repairs: dict = field(default_factory=dict)
     raw_result_message: dict = field(default_factory=dict)
 
 

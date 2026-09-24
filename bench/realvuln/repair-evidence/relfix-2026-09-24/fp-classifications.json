@@ -1,0 +1,622 @@
+{
+ "step": "G",
+ "seed": 20260924,
+ "sample": {
+  "h_unique_claims": 24,
+  "h_occurrences": 28,
+  "h_total_unique_claims_in_matrix": 198,
+  "h_total_fp_occurrences_in_matrix": 218,
+  "pi_comparison_claims": 6
+ },
+ "category_counts_unique_claims": {
+  "real_issue_outside_labels": 5,
+  "reporting_matching_error": 10,
+  "duplicate": 5,
+  "incorrect_security_claim": 4
+ },
+ "category_counts_sampled_occurrences": {
+  "real_issue_outside_labels": 5,
+  "reporting_matching_error": 13,
+  "duplicate": 5,
+  "incorrect_security_claim": 5
+ },
+ "h_classifications": [
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "file": "app.py",
+   "line": 14,
+   "cwe": "CWE-614",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_fb_session_cookie_flags_1"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "real_issue_outside_labels",
+   "rationale": "Source confirms: no SESSION_COOKIE_SECURE/SAMESITE/LIFETIME anywhere; secret_key hardcoded (labeled separately as -009 CWE-798); plain HTTP binding. Genuine insecure session-cookie configuration with no matching label.",
+   "implicated_stage": "Hunt (benchmark label gap)",
+   "gt_references": [
+    "damn-vulnerable-flask-app-009 (different issue)"
+   ]
+  },
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "file": "app.py",
+   "line": 79,
+   "cwe": "CWE-862",
+   "occurrences_in_sample": 2,
+   "finding_ids": [
+    "f_web_app_auth_bypass_6_2",
+    "f_t_auth_idor_6_1"
+   ],
+   "trials": [
+    1,
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "The missing-authorization issue on the playground routes IS labeled: GT CWE-306 at app.py:111/132/152/185. H reported CWE-862 at :79 (/dashboard, a link hub) \u2014 outside the 10-line window with a different CWE family, so the official matcher scored it unmatched.",
+   "implicated_stage": "evidence-to-report mapping (CWE selection/localization)",
+   "gt_references": [
+    "\u2026-012",
+    "\u2026-013",
+    "\u2026-014",
+    "\u2026-015"
+   ]
+  },
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "file": "app.py",
+   "line": 140,
+   "cwe": "CWE-209",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_fb_lookup_nameerror_debug_leak_1"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "duplicate",
+   "rationale": "`rp` is indeed undefined (only `popen` imported, line 4) so POST /lookup raises NameError; the exploitable impact is the debug traceback, which is already labeled (-011 CWE-215 app.py:208). Distinct trigger, same principal, no distinct vulnerability.",
+   "implicated_stage": "Hunt (novel trigger of a labeled weakness)",
+   "gt_references": [
+    "\u2026-011",
+    "\u2026-004 (XSS same line)"
+   ]
+  },
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "file": "test.db",
+   "line": 1,
+   "cwe": "CWE-256",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_fb_testdb_plaintext_creds_committed_1"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "duplicate",
+   "rationale": "The shipped sqlite file contains cleartext users because registration stores unhashed passwords \u2014 labeled at the sink (-010 CWE-256 app.py:62). The artifact claim restates the labeled issue at a derived file.",
+   "implicated_stage": "Hunt (artifact-level restatement)",
+   "gt_references": [
+    "\u2026-010"
+   ]
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "file": "sqli/app.py",
+   "line": 23,
+   "cwe": "CWE-209",
+   "occurrences_in_sample": 2,
+   "finding_ids": [
+    "f_t_gf_debug_info_disclosure_1_1",
+    "f_t_fb_info_disclosure_50x_error_page_1"
+   ],
+   "trials": [
+    1,
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "debug=True is labeled as misconfiguration: GT -015 CWE-16 sqli/app.py:24 \u2014 one line away. H reported CWE-209 at :23; CWE-family + window mismatch made it unmatched.",
+   "implicated_stage": "evidence-to-report mapping (CWE selection)",
+   "gt_references": [
+    "dvpwa-015",
+    "dvpwa-011"
+   ]
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "file": "sqli/views.py",
+   "line": 40,
+   "cwe": "CWE-204",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_gf_views_login_enum_1_1"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "real_issue_outside_labels",
+   "rationale": "Source-backed timing oracle: md5 check runs only when the username exists (dao/user.py:40-41 short-circuit at views.py:41). Distinct from the labeled brute-force (-017 CWE-307 views.py:33) and weak-hash (-008) entries; no enumeration label for DVPWA.",
+   "implicated_stage": "Hunt (benchmark label gap)",
+   "gt_references": [
+    "dvpwa-017",
+    "dvpwa-008"
+   ]
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "file": "sqli/views.py",
+   "line": 54,
+   "cwe": "CWE-754",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_t_gf_views_input_handling_1_1"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "duplicate",
+   "rationale": "The KeyError-on-missing-field behavior is real, but the route's security issue (anonymous POST) is labeled at the exact line (-012 CWE-862) and the only security consequence of the 500 (traceback) is the labeled debug misconfig (-015). No distinct principal.",
+   "implicated_stage": "Hunt (robustness restatement)",
+   "gt_references": [
+    "dvpwa-012",
+    "dvpwa-015"
+   ]
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "file": "sqli/views.py",
+   "line": 86,
+   "cwe": "CWE-20",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_t_gf_course_input_validation_1_1"
+   ],
+   "trials": [
+    1
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "incorrect_security_claim",
+   "rationale": "COURSE_SCHEMA is not wired into any route, so no enforceable control is bypassed; Course.create uses parameterized SQL (dao/course.py, %s placeholders). Claimed 'validation bypass' impact is unsupported by any downstream unsafe use.",
+   "implicated_stage": "Validate (should have rejected unsupported impact)",
+   "gt_references": [
+    "dvpwa-013 (same line, auth)"
+   ]
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/settings.py",
+   "line": 99,
+   "cwe": "CWE-614",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_gf_injection_views_session_management_1_2"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "Session-cookie security IS labeled: GT -024 CWE-614 settings.py:174 (same settings module, 75 lines away). H located the claim on MIDDLEWARE_CLASSES (:99) \u2014 window miss.",
+   "implicated_stage": "evidence-to-report mapping (localization)",
+   "gt_references": [
+    "lets-be-bad-guys-024"
+   ]
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/static/js/vendor/jquery.js",
+   "line": 1,
+   "cwe": "CWE-1104",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_static_frontend_known_vuln_components_1_2"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "real_issue_outside_labels",
+   "rationale": "jQuery 1.9.1 (known selector/XSS CVE-2012-6708 class) plus a 2010-2012 Zepto snapshot are served on the exercise pages; no vulnerable-component label exists for LBBG (DVPWA has one, this repo does not).",
+   "implicated_stage": "Hunt (benchmark label gap)",
+   "gt_references": []
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/vulnerable/views.py",
+   "line": 39,
+   "cwe": "CWE-754",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_t_gf_redirect_views_denial_of_service_1_2"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "duplicate",
+   "rationale": "TypeError when `p` is absent is real, but the function's traversal issue is labeled at :42 (-001 CWE-22) and DEBUG=True traceback disclosure at settings.py:10 (-012 CWE-215) carries the only security impact of the 500.",
+   "implicated_stage": "Hunt (robustness restatement)",
+   "gt_references": [
+    "lets-be-bad-guys-001",
+    "lets-be-bad-guys-012"
+   ]
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/vulnerable/views.py",
+   "line": 181,
+   "cwe": "CWE-837",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_exercise_views_logic_chain_7_1"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "The globals().get(fwd) dispatch is labeled code execution: GT -009 CWE-94 views.py:183, two lines away. H emitted CWE-837 \u2014 family mismatch \u2192 unmatched.",
+   "implicated_stage": "evidence-to-report mapping (CWE selection)",
+   "gt_references": [
+    "lets-be-bad-guys-009"
+   ]
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 493,
+   "cwe": "CWE-307",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_introduction_otp_bypass_16_1"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "The OTP lab weakness is labeled: GT -010 CWE-287 views.py:496 (3-digit code, 3 lines away; GT also carries a vuln=True CSRF entry at the same line 493). H's CWE-307 at :493 missed on CWE family.",
+   "implicated_stage": "evidence-to-report mapping (CWE selection)",
+   "gt_references": [
+    "pygoat-010",
+    "pygoat-fp-022"
+   ]
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 583,
+   "cwe": "CWE-1336",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_intro_views_ssti_eval_9_1"
+   ],
+   "trials": [
+    1
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "ImageMath.eval SSTI is labeled: GT -019 CWE-94 views.py:588 (the eval call, 5 lines away). H's CWE-1336 at :583 missed on CWE family.",
+   "implicated_stage": "evidence-to-report mapping (CWE selection)",
+   "gt_references": [
+    "pygoat-019"
+   ]
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 789,
+   "cwe": "CWE-565",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_views_idor_17_3"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "The User-Agent-trust lab is labeled: GT -013 CWE-639 views.py:797 (same function, 8 lines away \u2014 inside the window, different CWE family).",
+   "implicated_stage": "evidence-to-report mapping (CWE selection)",
+   "gt_references": [
+    "pygoat-013"
+   ]
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/views.py",
+   "line": 1055,
+   "cwe": "CWE-287",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_intro_views_auth_bypass_21_2"
+   ],
+   "trials": [
+    1
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "The unsigned-cookie admin lab is labeled: GT -031 CWE-639 views.py:1060 (same function, 5 lines away). CWE family mismatch \u2192 unmatched.",
+   "implicated_stage": "evidence-to-report mapping (CWE selection)",
+   "gt_references": [
+    "pygoat-031"
+   ]
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "file": "app/main.py",
+   "line": 29,
+   "cwe": "CWE-209",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_t_gf_fastapi_info_disclosure_1_1"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "Debug traceback exposure is labeled: GT -006 CWE-200 app/main.py:14 (DEBUG=True, 15 lines away \u2014 just outside the window) plus the shipped .env_temp. Same underlying issue, different location + CWE.",
+   "implicated_stage": "evidence-to-report mapping (localization)",
+   "gt_references": [
+    "python-insecure-app-006"
+   ]
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "file": "app/main.py",
+   "line": 31,
+   "cwe": "CWE-1088",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_t_gf_dos_no_timeout_1_1"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "real_issue_outside_labels",
+   "rationale": "Source confirms requests.get(config.PUBLIC_IP_SERVICE_URL) with no timeout= inside an async def handler \u2014 blocking event-loop starvation; distinct from the labeled SSRF at the same line (-004 CWE-918).",
+   "implicated_stage": "Hunt (distinct weakness, no label)",
+   "gt_references": [
+    "python-insecure-app-004"
+   ]
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "file": "app/main.py",
+   "line": 38,
+   "cwe": "CWE-400",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_fb_unbounded_template_compile_dos_1"
+   ],
+   "trials": [
+    1
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "real_issue_outside_labels",
+   "rationale": "Unbounded `name` compiled by Jinja2 Template() synchronously per request \u2014 CPU-bound parse of attacker-sized input; the labeled entries at the same line are XSS (-002/-003), a different weakness.",
+   "implicated_stage": "Hunt (distinct weakness, no label)",
+   "gt_references": [
+    "python-insecure-app-002",
+    "\u2026-003"
+   ]
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "file": "caddy/Caddyfile",
+   "line": 13,
+   "cwe": "CWE-288",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_caddy_waf_bypass_1"
+   ],
+   "trials": [
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "duplicate",
+   "rationale": "SecRuleEngine Off is labeled (-007 CWE-16 Caddyfile:13) AND H itself scored the same underlying issue as a TP at Caddyfile:17 with CWE-693 in the same run \u2014 this CWE-288 claim restates it with no distinct path or principal.",
+   "implicated_stage": "Dedupe (cross-CWE restatement not merged)",
+   "gt_references": [
+    "python-insecure-app-007"
+   ]
+  },
+  {
+   "repo": "realvuln-vampi",
+   "file": "api_views/books.py",
+   "line": 30,
+   "cwe": "CWE-248",
+   "occurrences_in_sample": 2,
+   "finding_ids": [
+    "f_gf_books_unique_constraint_dos_1_1",
+    "f_t_gf_books_api_dos_6_1"
+   ],
+   "trials": [
+    2,
+    3
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "incorrect_security_claim",
+   "rationale": "The cross-user unique-constraint IntegrityError is real behavior, but its standalone consequence is an unhandled 500 error page; no traceback disclosure path is configured/demonstrated in VAmPI and no data exposure or availability impact beyond a per-request error. Security impact unsupported.",
+   "implicated_stage": "Validate (should have rejected unsupported impact)",
+   "gt_references": []
+  },
+  {
+   "repo": "realvuln-vampi",
+   "file": "api_views/users.py",
+   "line": 52,
+   "cwe": "CWE-20",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_gf_users_register_validation_bypass_1_2"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "incorrect_security_claim",
+   "rationale": "Validation IS applied (jsonschema.validate at :59) before any write; the claimed pre-validation AttributeError only yields a generic 500 for a malformed body. No control is bypassed and no unsafe sink is reached.",
+   "implicated_stage": "Validate (should have rejected unsupported impact)",
+   "gt_references": [
+    "vampi-004 (mass assignment, same function)"
+   ]
+  },
+  {
+   "repo": "realvuln-vampi",
+   "file": "api_views/users.py",
+   "line": 52,
+   "cwe": "CWE-367",
+   "occurrences_in_sample": 1,
+   "finding_ids": [
+    "f_t_gf_users_register_race_1_1"
+   ],
+   "trials": [
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "incorrect_security_claim",
+   "rationale": "The register TOCTOU race is real as behavior, but the only caught-exception path is ValidationError; a racy duplicate ends in an unhandled 500 with no integrity, auth, or disclosure consequence. Impact unsupported.",
+   "implicated_stage": "Validate (should have rejected unsupported impact)",
+   "gt_references": []
+  },
+  {
+   "repo": "realvuln-vampi",
+   "file": "openapi_specs/openapi3.yml",
+   "line": 16,
+   "cwe": "CWE-306",
+   "occurrences_in_sample": 2,
+   "finding_ids": [
+    "f_t_gf_openapi_routing_createdb_unauth_1_1",
+    "f_t_gf_openapi_spec_route_gap_1_2"
+   ],
+   "trials": [
+    1,
+    2
+   ],
+   "official_match_reason": [
+    "unmatched"
+   ],
+   "category": "reporting_matching_error",
+   "rationale": "Unauthenticated /createdb is labeled: GT -011 CWE-306 api_views/main.py:6 (the populate_db handler). H reported the same issue at the OpenAPI SPEC file (openapi3.yml:16) \u2014 different file, so the matcher could never associate it.",
+   "implicated_stage": "evidence-to-report mapping (file selection)",
+   "gt_references": [
+    "vampi-011"
+   ]
+  }
+ ],
+ "pi_classifications": [
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "file": "app.py",
+   "line": 2,
+   "cwe": "CWE-502",
+   "category": "reporting_matching_error",
+   "rationale": "Pi located the pickle deserialization claim at the IMPORT line (app.py:2) instead of the sink (~:111-120, labeled -001 CWE-94 app.py:120 / matched by H at :111). Import-line reporting cannot match.",
+   "implicated_stage": "pi localization"
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "file": "config/dev.yaml",
+   "line": 1,
+   "cwe": "CWE-798",
+   "category": "real_issue_outside_labels",
+   "rationale": "Hardcoded postgres credentials in the default config; the labeled config issue is the SECRET at sqli/schema/config.py:12 (-016). Distinct unlabeled issue.",
+   "implicated_stage": "pi"
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "file": "badguys/settings.py",
+   "line": 10,
+   "cwe": "CWE-489",
+   "category": "reporting_matching_error",
+   "rationale": "DEBUG=True is labeled at the exact line as CWE-215 (-012); Pi emitted CWE-489 \u2014 family mismatch.",
+   "implicated_stage": "pi CWE selection"
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "file": "introduction/apis.py",
+   "line": 104,
+   "cwe": "CWE-73",
+   "category": "reporting_matching_error",
+   "rationale": "The A6 file-write lab is labeled at apis.py:131 (-036 CWE-73); Pi reported the function start (:104), 27 lines away.",
+   "implicated_stage": "pi localization"
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "file": "app/main.py",
+   "line": 13,
+   "cwe": "CWE-489",
+   "category": "reporting_matching_error",
+   "rationale": "Debug-enabled claim vs labeled -006 CWE-200 app/main.py:14 \u2014 one line away, different CWE family.",
+   "implicated_stage": "pi CWE selection"
+  },
+  {
+   "repo": "realvuln-vampi",
+   "file": "api_views/users.py",
+   "line": 40,
+   "cwe": "CWE-204",
+   "category": "real_issue_outside_labels",
+   "rationale": "Register endpoint's 'User already exists' message is a real enumeration oracle; the labeled enumeration entry (-006 CWE-204) is at users.py:101 (different function). Marginal but source-backed.",
+   "implicated_stage": "pi"
+  }
+ ],
+ "limitations": "Stratified development sample only: up to 4 deduplicated H FP claims per repo (24 of 198 unique claims; 28 of 218 occurrences) plus one Pi FP per repo, chosen with seed 20260924 before source inspection. NOT a full-matrix precision estimate and NOT an official-score adjudication: unmatched benchmark predictions are not automatically disproven vulnerabilities, and this review changes no scored result."
+}

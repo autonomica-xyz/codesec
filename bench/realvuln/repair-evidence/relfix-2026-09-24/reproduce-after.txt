@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/user/g/codesec/bench/realvuln/repair-evidence/review-2026-09-24/reproduce.py", line 101, in <module>
+    result = executor.export_arm_outputs(
+        exp=exp, manifest=manifest, cell={'arm': arm}, attempt_id='review',
+        output_dir=output, target_dir=target, deadline_ts=time.time() - 60)
+TypeError: export_arm_outputs() got an unexpected keyword argument 'deadline_ts'. Did you mean 'deadline'?

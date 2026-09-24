@@ -56,6 +56,12 @@ def _spec(tmp_path: Path, repos=("realvuln-a", "realvuln-b")) -> dict:
     }
 
 
+def _spec_with_admission(tmp_path: Path, repos=("realvuln-a", "realvuln-b")) -> dict:
+    from tests._admission import add_calibration_admission
+
+    return add_calibration_admission(tmp_path, _spec(tmp_path, repos))
+
+
 def _freeze(tmp_path: Path, monkeypatch) -> Path:
     """Freeze with the environment-dependent admission checks stubbed —
     the unit tests exercise the manifest machinery, not the live docker /
@@ -73,7 +79,7 @@ def _freeze(tmp_path: Path, monkeypatch) -> Path:
         exp_mod, "_image_profile_endpoints",
         lambda image: {"http://gateway:8800/v1"})
     spec_path = tmp_path / "protocol-v2.json"
-    spec_path.write_text(json.dumps(_spec(tmp_path)))
+    spec_path.write_text(json.dumps(_spec_with_admission(tmp_path)))
     exp = tmp_path / "exp"
     class _Args:
         spec, output = str(spec_path), str(exp)
@@ -311,7 +317,7 @@ def _exp_with_frozen_manifest(tmp_path: Path, monkeypatch,
         exp_mod, "_image_profile_endpoints",
         lambda image: {"http://gateway:8800/v1"})
     spec_path = tmp_path / "protocol-v2.json"
-    spec = _spec(tmp_path, repos=repos)
+    spec = _spec_with_admission(tmp_path, repos=repos)
     spec["realvuln_root"] = str(rv)
     spec_path.write_text(json.dumps(spec))
     exp = tmp_path / "exp"
@@ -513,7 +519,9 @@ async def test_executor_timeout_exports_h_checkpoint(tmp_path, monkeypatch):
         report_dir = output_dir / "run" / "results" / "report"
         report_dir.mkdir(parents=True)
         # Only the mid-run checkpoint exists — the final report was never
-        # written before the wall cap.
+        # written before the wall cap. The checkpoint is written WHILE
+        # WORK IS ELIGIBLE (the synthesis reserve guarantees this in real
+        # runs) so the operator-owned watcher captures it before the cap.
         (report_dir / "report.checkpoint.json").write_text(json.dumps({
             "run_id": "x", "findings": [{
                 "finding_id": "f_1", "file": "app.py", "line_start": 1,
@@ -522,6 +530,8 @@ async def test_executor_timeout_exports_h_checkpoint(tmp_path, monkeypatch):
             }],
         }))
         _gateway_record(kwargs["exp"], kwargs["attempt_id"])
+        import time as _time
+        _time.sleep(ex_mod.SNAPSHOT_POLL_S + 0.5)
         return {"exit_code": None, "timed_out": True, "container": "c1",
                 "stdout_tail": "", "stderr_tail": "", "duration_s": 7200.0,
                 "cmd": []}
@@ -646,6 +656,9 @@ async def test_executor_setup_failure_allows_one_retry(tmp_path, monkeypatch):
             raise ex_mod.isolation.IsolationError("docker exploded")
         output_dir = kwargs["exp"] / "attempts" / kwargs["attempt_id"] / "output"
         _fake_arm_report(output_dir, findings=[])
+        from tests._h_health import write_healthy_h_state
+
+        write_healthy_h_state(output_dir)
         _gateway_record(kwargs["exp"], kwargs["attempt_id"])
         return {"exit_code": 0, "stdout_tail": "", "stderr_tail": "",
                 "duration_s": 1.0, "cmd": []}

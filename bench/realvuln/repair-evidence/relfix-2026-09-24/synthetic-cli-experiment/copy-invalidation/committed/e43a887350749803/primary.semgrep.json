@@ -1,0 +1,26 @@
+{
+ "version": "codesec-realvuln-2",
+ "results": [
+  {
+   "check_id": "f_1",
+   "path": "app.py",
+   "start": {
+    "line": 1
+   },
+   "end": {
+    "line": 1
+   },
+   "extra": {
+    "message": "sqli",
+    "severity": "ERROR",
+    "metadata": {
+     "cwe": [
+      "CWE-89"
+     ],
+     "finding_id": "f_1",
+     "vuln_class": null
+    }
+   }
+  }
+ ]
+}

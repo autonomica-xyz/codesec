@@ -1,0 +1,201 @@
+{
+ "totals": {
+  "tp_before": 174,
+  "fp_before": 152,
+  "tp_after": 178,
+  "fp_after": 148
+ },
+ "rows": [
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "trial": 1,
+   "tp_before": 4,
+   "fp_before": 3,
+   "tp_after": 4,
+   "fp_after": 3,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "trial": 2,
+   "tp_before": 5,
+   "fp_before": 5,
+   "tp_after": 5,
+   "fp_after": 5,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-damn-vulnerable-flask-application",
+   "trial": 3,
+   "tp_before": 5,
+   "fp_before": 9,
+   "tp_after": 5,
+   "fp_after": 9,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "trial": 1,
+   "tp_before": 8,
+   "fp_before": 6,
+   "tp_after": 8,
+   "fp_after": 6,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "trial": 2,
+   "tp_before": 7,
+   "fp_before": 5,
+   "tp_after": 7,
+   "fp_after": 5,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-dvpwa",
+   "trial": 3,
+   "tp_before": 8,
+   "fp_before": 6,
+   "tp_after": 8,
+   "fp_after": 6,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "trial": 1,
+   "tp_before": 10,
+   "fp_before": 6,
+   "tp_after": 10,
+   "fp_after": 6,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "trial": 2,
+   "tp_before": 13,
+   "fp_before": 7,
+   "tp_after": 13,
+   "fp_after": 7,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-lets-be-bad-guys",
+   "trial": 3,
+   "tp_before": 10,
+   "fp_before": 3,
+   "tp_after": 10,
+   "fp_after": 3,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "trial": 1,
+   "tp_before": 20,
+   "fp_before": 24,
+   "tp_after": 22,
+   "fp_after": 22,
+   "changed": [
+    [
+     "introduction/views.py",
+     583,
+     "CWE-1336",
+     "CWE-94"
+    ],
+    [
+     "introduction/views.py",
+     512,
+     "CWE-307",
+     "CWE-287"
+    ]
+   ]
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "trial": 2,
+   "tp_before": 23,
+   "fp_before": 16,
+   "tp_after": 24,
+   "fp_after": 15,
+   "changed": [
+    [
+     "introduction/views.py",
+     493,
+     "CWE-307",
+     "CWE-287"
+    ]
+   ]
+  },
+  {
+   "repo": "realvuln-pygoat",
+   "trial": 3,
+   "tp_before": 25,
+   "fp_before": 16,
+   "tp_after": 26,
+   "fp_after": 15,
+   "changed": [
+    [
+     "introduction/views.py",
+     511,
+     "CWE-307",
+     "CWE-287"
+    ]
+   ]
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "trial": 1,
+   "tp_before": 3,
+   "fp_before": 3,
+   "tp_after": 3,
+   "fp_after": 3,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "trial": 2,
+   "tp_before": 1,
+   "fp_before": 9,
+   "tp_after": 1,
+   "fp_after": 9,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-python-insecure-app",
+   "trial": 3,
+   "tp_before": 4,
+   "fp_before": 5,
+   "tp_after": 4,
+   "fp_after": 5,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-vampi",
+   "trial": 1,
+   "tp_before": 10,
+   "fp_before": 9,
+   "tp_after": 10,
+   "fp_after": 9,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-vampi",
+   "trial": 2,
+   "tp_before": 8,
+   "fp_before": 11,
+   "tp_after": 8,
+   "fp_after": 11,
+   "changed": []
+  },
+  {
+   "repo": "realvuln-vampi",
+   "trial": 3,
+   "tp_before": 10,
+   "fp_before": 9,
+   "tp_after": 10,
+   "fp_after": 9,
+   "changed": []
+  }
+ ],
+ "reserved_diagnostic_touched": [],
+ "pickle_controls_touched": 0
+}

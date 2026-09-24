@@ -1,0 +1,42 @@
+{
+  "late_invalidation": {
+    "verify_exit": 1,
+    "verify_message": "verify FAILED (1 problems):\n  cell 702420addd7b4cc4: protocol invalidation recorded (review_simulated_protocol_breach) \u2014 comparison invalidated",
+    "headline_present": false,
+    "problems": [
+      "cell 702420addd7b4cc4: protocol invalidation recorded (review_simulated_protocol_breach) \u2014 comparison invalidated"
+    ]
+  },
+  "corrupt_committed_failed_output": {
+    "verify_exit": 1,
+    "verify_message": "verify FAILED (1 problems):\n  cell 358d16220e1b1dda: committed evidence present but invalid (truncated primary artifact) \u2014 integrity failure",
+    "headline_present": false,
+    "problems": [
+      "cell 358d16220e1b1dda: committed evidence present but invalid (truncated primary artifact) \u2014 integrity failure",
+      "trial 2 arm h: no counts for ['realvuln-dvpwa'] (cannot pool a partial trial)"
+    ]
+  },
+  "wrong_marker_identity": {
+    "verify_exit": 1,
+    "verify_message": "verify FAILED (1 problems):\n  cell 702420addd7b4cc4: committed evidence present but invalid (marker repo identity mismatch) \u2014 integrity failure",
+    "headline_present": false,
+    "problems": [
+      "cell 702420addd7b4cc4: committed evidence present but invalid (marker repo identity mismatch) \u2014 integrity failure",
+      "trial 1 arm h: no counts for ['realvuln-damn-vulnerable-flask-application'] (cannot pool a partial trial)"
+    ]
+  },
+  "post_deadline_output": {
+    "h": {
+      "rejected": true,
+      "error": "FileNotFoundError"
+    },
+    "v": {
+      "rejected": true,
+      "error": "FileNotFoundError"
+    }
+  },
+  "freeze_without_real_gate_evidence": {
+    "exit_code": 1,
+    "message": "spec failed freeze validation:\n  - scored admission requires an 'admission' block with evidence file references (a bare hash string is not evidence)"
+  }
+}

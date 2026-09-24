@@ -1,0 +1,1 @@
+{"repo_id": "realvuln-alpha", "commit_sha": "deadbeef", "findings": [{"id": "realvuln-alpha-v", "is_vulnerable": true, "primary_cwe": "CWE-89", "file": "app.py", "acceptable_cwes": ["CWE-89"], "location": {"start_line": 1, "end_line": 1}}]}

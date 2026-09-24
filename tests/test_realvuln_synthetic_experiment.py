@@ -71,6 +71,12 @@ def _spec(tmp_path: Path, repos) -> dict:
     }
 
 
+def _admit(tmp_path: Path, spec: dict) -> dict:
+    from tests._admission import add_calibration_admission
+
+    return add_calibration_admission(tmp_path, spec)
+
+
 def _freeze(tmp_path: Path, spec: dict, monkeypatch) -> Path:
     import bench.realvuln.isolation as iso
 
@@ -132,7 +138,7 @@ def test_miniature_experiment_end_to_end(tmp_path, monkeypatch):
     """One pass through freeze/run/verify/aggregate where every failure
     class appears exactly once."""
     repos = ["realvuln-a", "realvuln-b", "realvuln-c"]
-    spec = _spec(tmp_path, repos)
+    spec = _admit(tmp_path, _spec(tmp_path, repos))
     exp = _freeze(tmp_path, spec, monkeypatch)
     manifest = load_manifest(exp)
 
@@ -146,6 +152,9 @@ def test_miniature_experiment_end_to_end(tmp_path, monkeypatch):
         key = (cell["repo"], cell["arm"])
         if key == ("realvuln-a", "h"):      # clean success
             _write_h_report(out, [_finding()])
+            from tests._h_health import write_healthy_h_state
+
+            write_healthy_h_state(out)
             return {"exit_code": 0, "stdout_tail": "", "stderr_tail": "",
                     "duration_s": 5.0, "cmd": []}
         if key == ("realvuln-a", "v"):      # timeout; valid file then
@@ -161,6 +170,7 @@ def test_miniature_experiment_end_to_end(tmp_path, monkeypatch):
             report_dir.mkdir(parents=True)
             (report_dir / "report.checkpoint.json").write_text(
                 json.dumps({"run_id": "x", "findings": [_finding()]}))
+            time.sleep(ex_mod.SNAPSHOT_POLL_S + 0.5)  # capture before cap
             return {"exit_code": None, "timed_out": True, "container": "c",
                     "stdout_tail": "", "stderr_tail": "", "duration_s": 60.0,
                     "cmd": []}
@@ -241,7 +251,7 @@ def test_invalidated_cell_blocks_claim_and_flags_aggregation(
 ):
     """A protocol-breach invalidation is terminal AND surfaced."""
     repos = ["realvuln-a"]
-    spec = _spec(tmp_path, repos)
+    spec = _admit(tmp_path, _spec(tmp_path, repos))
     exp = _freeze(tmp_path, spec, monkeypatch)
     manifest = load_manifest(exp)
     ledger = AttemptLedger(

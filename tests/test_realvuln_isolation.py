@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import uuid
 from pathlib import Path
 
 import pytest
@@ -272,7 +273,11 @@ def test_isolation_suite_blocks_and_permits(tmp_path):
 
 @pytest.mark.skipif(not _docker_available(), reason="docker unavailable")
 def test_agent_image_contains_allowlist_only(tmp_path):
-    image_id = iso.build_agent_image()
+    # Unique test tag (plan F.2 audit): NEVER the shared `codesec-iso`
+    # tag — a test build must not overwrite the experiment image.
+    image_id = iso.build_agent_image(
+        tag=f"codesec-iso-test-{uuid.uuid4().hex[:8]}"
+    )
     result = subprocess.run(
         ["docker", "run", "--rm", image_id, "bash", "-lc",
          "ls /opt/codesec-src 2>/dev/null; "

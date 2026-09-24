@@ -1,0 +1,73 @@
+ M .gitignore
+ M codesec/auth.py
+ M codesec/cli.py
+ M codesec/config.py
+ M codesec/contracts.py
+ M codesec/local_agent.py
+ M codesec/orchestrator.py
+ M codesec/providers.py
+ M codesec/runner.py
+ M codesec/stages/_common.py
+ M codesec/stages/dedupe.py
+ M codesec/stages/feedback.py
+ M codesec/stages/gapfill.py
+ M codesec/stages/hunt.py
+ M codesec/stages/recon.py
+ M codesec/stages/report.py
+ M codesec/stages/trace.py
+ M codesec/stages/validate.py
+ M codesec/state.py
+ M prompts/01-recon.md
+ M prompts/02-hunt.md
+ M prompts/03-arbiter.md
+ M prompts/03-validate.md
+ M prompts/06-trace.md
+ M prompts/08-report.md
+ M schemas/report.schema.json
+ M schemas/trace.schema.json
+ M tests/test_auth.py
+ M tests/test_config.py
+ M tests/test_contracts.py
+ M tests/test_dedupe_stage.py
+ M tests/test_local_agent.py
+ M tests/test_local_engine_recon_repair.py
+ M tests/test_markers.py
+ M tests/test_orchestrator.py
+ M tests/test_providers.py
+ M tests/test_report_stage.py
+ M tests/test_runner_errors.py
+ M tests/test_schemas.py
+ M tests/test_stage_context.py
+ M tests/test_state.py
+ M tests/test_trace_stage.py
+?? bench/AUDIT-HARNESS-GLM53-REALVULN-2026-09-22.md
+?? bench/PLAN-LOCAL-VS-ZAI.md
+?? bench/PLAN-REALVULN-REPAIR-AND-RETEST.md
+?? bench/PLAN-RELIABILITY-FIXES-AND-FP-REVIEW-2026-09-24.md
+?? bench/PLAN-RELIABLE-HARNESS-VS-PI.md
+?? bench/PLAN-SHIP-CONFIRMED.md
+?? bench/RESULTS-HARNESS-GLM53-REALVULN-2026-09-22.md
+?? bench/RESULTS-HARNESS-VS-PI-RELIABILITY-2026-09-23.md
+?? bench/REVIEW-RELIABILITY-2026-09-24.md
+?? bench/REVIEW-REPAIR-EXECUTION-2026-09-23.md
+?? bench/realvuln/
+?? codesec/deadline.py
+?? codesec/reasoning.py
+?? config/zai-glm53-experiment.yaml
+?? prompts/01-recon.live.md
+?? prompts/02-hunt.live.md
+?? prompts/03-arbiter.live.md
+?? prompts/03-validate.live.md
+?? prompts/06-trace.live.md
+?? tests/test_benchmark_deadlines.py
+?? tests/test_realvuln_adapter.py
+?? tests/test_realvuln_aggregate.py
+?? tests/test_realvuln_gateway.py
+?? tests/test_realvuln_harness.py
+?? tests/test_realvuln_isolation.py
+?? tests/test_realvuln_ledger.py
+?? tests/test_realvuln_manifest.py
+?? tests/test_realvuln_pi_parity.py
+?? tests/test_realvuln_preflight.py
+?? tests/test_realvuln_snapshot.py
+?? tests/test_realvuln_synthetic_experiment.py

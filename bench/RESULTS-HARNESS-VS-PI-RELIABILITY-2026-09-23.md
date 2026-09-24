@@ -185,11 +185,32 @@ H's ~30–45), high precision, low recall.
 
 ## Calibration evidence (all under v5 hashes, same image)
 
+> **CORRECTION (2026-09-24, plan step F.1).** The table below
+> originally cited `calib-deadline-20260923-01` and
+> `calib-neterror-20260923-02` as v5-image evidence. Their ledgers show
+> they ran under the OLDER image `sha256:b290653677a1…`, not the v5 image
+> `sha256:2cc22eda…`; the "all under v5 hashes, same image" claim was
+> wrong for those two rows. The correct same-image runs recorded in the
+> progress log are `calib-deadline-20260923-09` (H `failed_output` at
+> 122 s with checkpoint-only export + inference; V completed normally in
+> 12.36 s — so the **V deadline-recovery path was not exercised there**)
+> and `calib-neterror-20260923-07` (gateway disconnected: 4x
+> `setup_failed`/`no_inference`, both arms, 0 leftover containers).
+> Additional limitation, same date: in `calib-deadline-20260923-09` the H
+> arm stopped at its cutoff only through the executor's then-current
+> `timeout_s + CLEANUP_GRACE_S` allowance (fixed 2026-09-24: the workload
+> cap no longer includes cleanup grace). These rows are evidence of
+> *contemporaneous* behavior, not an unconditional integrity sign-off —
+> see `bench/REVIEW-RELIABILITY-2026-09-24.md` for the defects that
+> remained open at review time and
+> `bench/RESULTS-RELIABILITY-FIXES-AND-FP-REVIEW-2026-09-24.md` for the
+> repairs.
+
 | Exercise | Result |
 |---|---|
 | `calib-smoke-20260923-03` | H completed 441 s + V completed 21 s, both inference-bearing; 1 invalid hunt finding quarantined as degraded stage health; 6 superseded dedupe generations retained for audit |
-| `calib-deadline-20260923-01` | H `failed_output` at 121 s with checkpoint-only export + inference; V completed 25 s |
-| `calib-neterror-20260923-02` | gateway disconnected: H `failed_output`/`arm_exit_1` 211 s, V `setup_failed` ×2; both `made_inference_requests: false`, 0 leftover containers |
+| `calib-deadline-20260923-01` ⚠ older image `b2906536…` | H `failed_output` at 121 s with checkpoint-only export + inference; V completed 25 s |
+| `calib-neterror-20260923-02` ⚠ older image `b2906536…` | gateway disconnected: H `failed_output`/`arm_exit_1` 211 s, V `setup_failed` ×2; both `made_inference_requests: false`, 0 leftover containers |
 | `calib-vampi-20260923-04` | H completed 894 s `report.json`, V completed 60 s `final_file` |
 | `calib-pygoat-20260923-04` | H completed 1201 s `report.json`, V completed 60 s `final_file` |
 | Isolation suite | 16/16 checks passed under image `2cc22edaa975…` |

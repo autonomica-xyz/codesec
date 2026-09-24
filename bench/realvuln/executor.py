@@ -39,13 +39,24 @@ if str(_ROOT) not in sys.path:
 from bench.realvuln import adapter, isolation
 from bench.realvuln.common import write_json
 from bench.realvuln.ledger import AttemptLedger, LedgerConflictError
-from bench.realvuln.snapshot import latest_valid_snapshot, retain_snapshot
+from bench.realvuln.snapshot import (
+    WorkDeadline,
+    latest_valid_snapshot,
+    retain_snapshot,
+)
 
 PYGOAT = "realvuln-pygoat"
 CLEANUP_GRACE_S = 30.0
-#: How often the V-arm supervisor re-captures the externally-written
-#: findings file so a truncated final write cannot erase the last valid one.
+#: How often the supervisor re-captures agent-written output files so a
+#: truncated final write cannot erase the last valid one, and so every
+#: eligible byte has an operator-owned capture. Both arms are watched.
 SNAPSHOT_POLL_S = 2.0
+
+#: Operator-owned snapshot root (relative to the attempt dir): NEVER under
+#: the container-mounted output/ — agent-writable "snapshot" directories
+#: next to live files are forgeable evidence and are never consulted.
+def snapshots_root(exp: Path, attempt_id: str) -> Path:
+    return exp / "attempts" / attempt_id / "snapshots"
 
 
 #: Wall ceilings per repo (seconds); early normal completion allowed.
@@ -99,32 +110,71 @@ def _findings_schema(payload) -> list[str]:
     return problems
 
 
-class _SnapshotWatcher:
-    """Re-capture the V arm's externally-written findings file while its
-    container runs, so a truncated final write (or a kill mid-write) can
-    never destroy the last valid snapshot."""
+def _report_schema(payload) -> list[str]:
+    """H report/checkpoint/confirmed shape used for capture retention."""
+    if not isinstance(payload, dict):
+        return ["top-level JSON must be an object"]
+    if not isinstance(payload.get("findings"), list):
+        return ["findings must be a list"]
+    return []
 
-    def __init__(self, source: Path, *, deadline_ts: float | None = None):
-        self.source = source
-        self.deadline_ts = deadline_ts
+
+class _SnapshotWatcher:
+    """Operator-side capture of agent-written output files WHILE WORK IS
+    ELIGIBLE (plan step B.3/B.4). Snapshots are stored under the
+    operator-owned ``exp/attempts/<id>/snapshots`` tree — never inside the
+    container-mounted output directory — so the agent cannot forge capture
+    metadata to make late output eligible. Captures stop the moment the
+    monotonic work deadline expires; a post-deadline write is never
+    retained, never eligible."""
+
+    def __init__(
+        self,
+        sources: dict[str, Path],
+        *,
+        snapshot_root: Path,
+        deadline: WorkDeadline,
+        schema_validators: dict[str, object] | None = None,
+        poll_s: float = SNAPSHOT_POLL_S,
+        tags: dict | None = None,
+    ):
+        self.sources = dict(sources)
+        self.snapshot_root = Path(snapshot_root)
+        self.deadline = deadline
+        self.validators = dict(schema_validators or {})
+        self.poll_s = poll_s
+        self.tags = tags or {}
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._loop, daemon=True)
+        self.captures = 0
 
-    def _loop(self) -> None:
-        while not self._stop.wait(SNAPSHOT_POLL_S):
-            if (
-                self.deadline_ts is not None
-                and time.time() > self.deadline_ts
-            ):
-                return  # post-deadline captures are ineligible anyway
+    def capture_once(self) -> int:
+        """Capture every watched source whose current bytes are complete
+        and valid. Returns the number of new snapshots."""
+        if self.deadline.expired():
+            return 0  # post-deadline bytes are never eligible
+        captured = 0
+        for name, source in self.sources.items():
             try:
-                retain_snapshot(
-                    self.source,
-                    schema_validator=_findings_schema,
-                    tags={"watch": "v-arm"},
+                snap = retain_snapshot(
+                    source,
+                    schema_validator=self.validators.get(name),
+                    snapshot_dir=self.snapshot_root / name,
+                    tags={**self.tags, "watch": name},
+                    captured_at_wall=self.deadline.wall_ts(),
                 )
             except OSError:
-                pass
+                snap = None
+            if snap is not None:
+                captured += 1
+        self.captures += captured
+        return captured
+
+    def _loop(self) -> None:
+        while not self._stop.wait(self.poll_s):
+            if self.deadline.expired():
+                return
+            self.capture_once()
 
     def __enter__(self):
         self._thread.start()
@@ -132,7 +182,7 @@ class _SnapshotWatcher:
 
     def __exit__(self, *exc):
         self._stop.set()
-        self._thread.join(timeout=SNAPSHOT_POLL_S + 2)
+        self._thread.join(timeout=self.poll_s + 2)
 
 
 def prepare_or_reuse_bundles(exp: Path, manifest: dict, repo: str,
@@ -205,7 +255,7 @@ def run_arm_container(
     attempt_id: str,
     target_dir: Path,
     gateway_url: str,
-    timeout_s: float,
+    deadline: WorkDeadline,
     repo: str,
 ) -> dict:
     """Execute one arm attempt in its isolation container.
@@ -213,7 +263,15 @@ def run_arm_container(
     H: the codesec CLI with the frozen experiment config against the
     gateway. V: pinned pi, headless, isolated agent dir with the gateway
     provider definition carrying per-request attribution headers. Both
-    write only under /work/output/<attempt>."""
+    write only under /work/output/<attempt>.
+
+    The supervisor receives the ACTUAL REMAINING WORK BUDGET from the
+    cell's single monotonic deadline — never the cap plus a cleanup
+    allowance. Cleanup grace starts after work is stopped inside
+    ``run_isolated`` and cannot fund further inference or tool work. H's
+    in-container synthesis reserve is preserved by passing the remaining
+    budget to ``--max-hours``."""
+    timeout_s = deadline.remaining_s()
     output_dir = exp / "attempts" / attempt_id / "output"
     scratch_dir = exp / "attempts" / attempt_id / "scratch"
     settings = manifest["settings"]
@@ -287,49 +345,119 @@ def run_arm_container(
         output_dir=output_dir,
         command=command,
         gateway_url=gateway_url,
-        timeout_s=timeout_s + CLEANUP_GRACE_S,
+        timeout_s=timeout_s,
         env=env,
         image=image,
     )
+
+
+def _h_stage_health(output_dir: Path) -> dict:
+    """Read the H run's terminal stage health from its state DB (plan
+    step E.5): a clean completion requires every required stage to have a
+    terminal 'complete' end event with no degradation reasons. Unknown or
+    missing health evidence is NOT a clean pass."""
+    import sqlite3
+
+    db_path = output_dir / "run" / "state.db"
+    required = ("recon", "hunt", "validate", "dedupe", "trace", "report")
+    if not db_path.is_file():
+        return {"clean": False, "evidence": "missing",
+                "problem": "no run state DB — stage health unknown"}
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+        ends = []
+        for row in conn.execute(
+            "SELECT stage, event FROM stage_events ORDER BY event_id"
+        ):
+            try:
+                event = json.loads(row["event"])
+            except json.JSONDecodeError:
+                continue
+            if event.get("phase") == "end":
+                # stage lives in the row column; the event payload carries
+                # it too when written by _StageHealth — accept either.
+                event.setdefault("stage", row["stage"])
+                ends.append(event)
+        conn.close()
+    except sqlite3.Error as error:
+        return {"clean": False, "evidence": "unreadable",
+                "problem": f"state DB unreadable: {error}"}
+    if not ends:
+        return {"clean": False, "evidence": "empty",
+                "problem": "no terminal stage health events recorded"}
+    problems: list[str] = []
+    for event in ends:
+        stage = event.get("stage")
+        if event.get("status") != "complete":
+            problems.append(
+                f"stage {stage} ended {event.get('status')}"
+                f"({event.get('error_category')})"
+            )
+        elif event.get("degraded_reasons"):
+            problems.append(
+                f"stage {stage} degraded: {event.get('degraded_reasons')}"
+            )
+    seen = {event.get("stage") for event in ends}
+    for stage in required:
+        if stage not in seen:
+            problems.append(f"required stage {stage} has no health record")
+    return {
+        "clean": not problems,
+        "evidence": "state_db",
+        "stages": sorted(seen),
+        "problems": problems,
+    }
 
 
 def _export_h_outputs(
     *,
     output_dir: Path,
     target_dir: Path,
+    snapshot_root: Path,
+    deadline: WorkDeadline,
 ) -> tuple[dict[str, Path], dict, dict]:
-    """H export: the final report when present, else the newest VALID
-    mid-run checkpoint (the deadline reserve exists precisely so this
-    artifact is available after a timeout). Both are schema-shaped JSON
-    written atomically by the harness itself."""
+    """H export from operator-owned snapshots only (plan step B.3/B.4):
+    the newest eligible capture of the final report when one exists, else
+    the newest eligible checkpoint capture (the in-container synthesis
+    reserve exists precisely so this artifact survives a timeout), plus
+    the newest eligible confirmed.json capture. Bytes first seen after
+    the cutoff have no eligible capture and are never exported."""
     files: dict[str, Path] = {}
     drops: dict[str, dict] = {}
     provenance: dict = {}
-    run_root = output_dir / "run"
-    report_dir = run_root / "results" / "report"
-    report = report_dir / "report.json"
-    checkpoint = report_dir / "report.checkpoint.json"
-    confirmed = report_dir / "confirmed.json"
-    source = None
-    for candidate in (report, checkpoint):
-        if not candidate.is_file():
-            continue
-        try:
-            payload = json.loads(candidate.read_text())
-        except (json.JSONDecodeError, OSError):
-            continue  # truncated/invalid — never exported as-is
-        if isinstance(payload, dict) and isinstance(
-            payload.get("findings"), list
-        ):
-            source = candidate
-            break
+    report_dir = output_dir / "run" / "results" / "report"
+    deadline_wall = deadline.deadline_wall_ts()
+
+    def _latest(name: str) -> dict | None:
+        return latest_valid_snapshot(
+            report_dir / name,
+            deadline_ts=deadline_wall,
+            schema_validator=_report_schema,
+            snapshot_dir=snapshot_root / name,
+        )
+
+    source = _latest("report.json")
+    if source is not None:
+        provenance["h_report_source"] = "report.json"
+    else:
+        source = _latest("report.checkpoint.json")
+        if source is not None:
+            provenance["h_report_source"] = "report.checkpoint.json"
     if source is None:
         raise FileNotFoundError(
-            f"missing valid H report or checkpoint under {report_dir}"
+            f"no eligible H report or checkpoint capture for "
+            f"{report_dir} (work deadline already spent)"
         )
-    provenance["h_report_source"] = source.name
-    provenance["checkpoint_only"] = source.name != "report.json"
-    primary_payload = json.loads(source.read_text())
+    provenance["checkpoint_only"] = (
+        provenance["h_report_source"] != "report.json"
+    )
+    provenance["primary_capture"] = {
+        "sha256": source["sha256"],
+        "captured_at": source["captured_at"],
+        "path": source["path"],
+    }
+    primary_payload = json.loads(Path(source["path"]).read_text())
     primary = adapter.adapt_findings(
         {"findings": [
             {
@@ -346,10 +474,20 @@ def _export_h_outputs(
         ]},
         target_dir,
     )
-    secondary_payload = (
-        json.loads(confirmed.read_text())
-        if confirmed.is_file() else {"findings": []}
-    )
+    secondary_capture = _latest("confirmed.json")
+    if secondary_capture is not None:
+        secondary_payload = json.loads(
+            Path(secondary_capture["path"]).read_text()
+        )
+        provenance["secondary_capture"] = {
+            "sha256": secondary_capture["sha256"],
+            "captured_at": secondary_capture["captured_at"],
+        }
+    else:
+        # Secondary is auxiliary: absent after a timeout means no eligible
+        # capture ever happened — exported empty, and the fact recorded.
+        secondary_payload = {"findings": []}
+        provenance["secondary_capture"] = None
     secondary = adapter.adapt_findings(
         {"findings": [
             {
@@ -375,6 +513,7 @@ def _export_h_outputs(
     files["secondary"].write_text(
         json.dumps(adapter.semgrep_document(secondary.results), indent=1)
     )
+    provenance["h_stage_health"] = _h_stage_health(output_dir)
     return files, drops, provenance
 
 
@@ -382,49 +521,41 @@ def _export_v_outputs(
     *,
     output_dir: Path,
     target_dir: Path,
-    deadline_ts: float | None,
+    snapshot_root: Path,
+    deadline: WorkDeadline,
 ) -> tuple[dict[str, Path], dict, dict]:
-    """V export: prefer the live findings file when it is complete and
-    schema-valid; otherwise the newest retained snapshot at or before the
-    deadline (re-validated: hash + JSON + schema). A truncated final write
-    never erases a valid earlier capture, and post-deadline bytes are never
-    eligible."""
+    """V export from operator-owned snapshots only: the newest eligible
+    capture of the externally-written findings file. A truncated final
+    write never erases a valid earlier capture, and bytes first seen
+    after the cutoff have no eligible capture and are never exported."""
     files: dict[str, Path] = {}
     drops: dict[str, dict] = {}
     provenance: dict = {}
     findings_path = output_dir / "findings.json"
 
-    source: Path | None = None
-    if findings_path.is_file():
-        try:
-            payload = json.loads(findings_path.read_bytes())
-            if not _findings_schema(payload):
-                retain_snapshot(
-                    findings_path,
-                    schema_validator=_findings_schema,
-                    tags={"watch": "final"},
-                )
-                source = findings_path
-                provenance["v_source"] = "final_file"
-        except (json.JSONDecodeError, OSError):
-            pass  # truncated write — fall back to the retained snapshot
-    if source is None:
-        retained = latest_valid_snapshot(
-            findings_path,
-            deadline_ts=deadline_ts,
-            schema_validator=_findings_schema,
+    retained = latest_valid_snapshot(
+        findings_path,
+        deadline_ts=deadline.deadline_wall_ts(),
+        schema_validator=_findings_schema,
+        snapshot_dir=snapshot_root / "findings.json",
+    )
+    if retained is None:
+        raise FileNotFoundError(
+            f"missing valid V findings output: {findings_path} "
+            "(no eligible pre-deadline snapshot retained)"
         )
-        if retained is None:
-            raise FileNotFoundError(
-                f"missing valid V findings output: {findings_path} "
-                "(no pre-deadline snapshot retained)"
-            )
-        source = Path(retained["path"])
-        provenance["v_source"] = "retained_snapshot"
-        provenance["snapshot_sha256"] = retained["sha256"]
-        provenance["snapshot_captured_at"] = retained["captured_at"]
+    provenance["v_source"] = "retained_snapshot"
+    provenance["snapshot_sha256"] = retained["sha256"]
+    provenance["snapshot_captured_at"] = retained["captured_at"]
+    provenance["primary_capture"] = {
+        "sha256": retained["sha256"],
+        "captured_at": retained["captured_at"],
+        "path": retained["path"],
+    }
 
-    payload = adapter.parse_findings_document(source.read_text())
+    payload = adapter.parse_findings_document(
+        Path(retained["path"]).read_text()
+    )
     adapted = adapter.adapt_findings(payload, target_dir)
     drops["primary"] = adapted.drop_counts
     files["primary"] = output_dir / "primary.semgrep.json"
@@ -442,21 +573,26 @@ def export_arm_outputs(
     attempt_id: str,
     output_dir: Path,
     target_dir: Path,
-    deadline_ts: float | None = None,
+    deadline: WorkDeadline,
 ) -> dict:
     """Validate and adapt authoritative outputs to the frozen export
-    formats. H: report.json (primary policy) or the newest valid
-    report.checkpoint.json, + confirmed.json (secondary). V: the live
-    findings file or the retained pre-deadline snapshot."""
+    formats, selecting ONLY operator-owned pre-deadline captures (hash +
+    schema re-validated at selection). H: newest eligible report.json
+    capture, else newest eligible report.checkpoint.json capture, plus a
+    confirmed.json secondary. V: newest eligible findings.json capture.
+    A file that first appears after the cutoff is not eligible."""
+    snapshot_root = snapshots_root(exp, attempt_id)
     if cell["arm"] == "h":
         files, drops, provenance = _export_h_outputs(
             output_dir=output_dir, target_dir=target_dir,
+            snapshot_root=snapshot_root, deadline=deadline,
         )
     else:
         files, drops, provenance = _export_v_outputs(
             output_dir=output_dir, target_dir=target_dir,
-            deadline_ts=deadline_ts,
+            snapshot_root=snapshot_root, deadline=deadline,
         )
+    provenance["deadline"] = deadline.as_record()
     return {"files": files, "drops": drops, "provenance": provenance}
 
 
@@ -616,25 +752,53 @@ def _execute_attempt(
 
     output_dir = exp / "attempts" / attempt_id / "output"
     ceiling = wall_ceiling_s(repo, settings)
-    deadline_ts = time.time() + ceiling
+    # One work deadline per cell, defined ONCE on the monotonic clock.
+    # Wall stamps in records are annotations, never the cutoff authority.
+    deadline = WorkDeadline(total_seconds=ceiling)
+
+    # Watched output files (both arms) with their capture validators;
+    # snapshots are stored operator-side, never agent-writable.
+    report_dir = output_dir / "run" / "results" / "report"
+    if cell["arm"] == "h":
+        sources = {
+            "report.json": report_dir / "report.json",
+            "report.checkpoint.json": report_dir / "report.checkpoint.json",
+            "confirmed.json": report_dir / "confirmed.json",
+        }
+        validators = {name: _report_schema for name in sources}
+    else:
+        sources = {"findings.json": output_dir / "findings.json"}
+        validators = {"findings.json": _findings_schema}
+    watcher = _SnapshotWatcher(
+        sources,
+        snapshot_root=snapshots_root(exp, attempt_id),
+        deadline=deadline,
+        schema_validators=validators,
+        poll_s=float(settings.get("snapshot_poll_s", SNAPSHOT_POLL_S)),
+        tags={"arm": cell["arm"], "cell_id": cell["cell_id"],
+              "attempt_id": attempt_id},
+    )
 
     result: dict | None = None
     try:
-        if cell["arm"] == "v":
-            with _SnapshotWatcher(
-                output_dir / "findings.json", deadline_ts=deadline_ts
-            ):
-                result = run_arm_container(
-                    exp=exp, manifest=manifest, cell=cell,
-                    attempt_id=attempt_id, target_dir=target_dir,
-                    gateway_url=gateway_url, timeout_s=ceiling, repo=repo,
-                )
-        else:
+        with watcher:
             result = run_arm_container(
                 exp=exp, manifest=manifest, cell=cell,
                 attempt_id=attempt_id, target_dir=target_dir,
-                gateway_url=gateway_url, timeout_s=ceiling, repo=repo,
+                gateway_url=gateway_url, deadline=deadline, repo=repo,
             )
+            # Early normal completion (plan step B.5): capture the exact
+            # final bytes NOW, while still inside the work budget — the
+            # periodic watcher may not have polled since the last write.
+            # Only for a container that exited on its own BEFORE the cap:
+            # a timed-out or controller-killed container's stop-grace
+            # window can still contain writes, so no final capture there.
+            if (
+                not result.get("timed_out")
+                and not result.get("controller_error")
+                and not deadline.expired()
+            ):
+                watcher.capture_once()
     except isolation.IsolationError as error:
         ledger.append({
             "type": "attempt_end",
@@ -701,7 +865,7 @@ def _execute_attempt(
         exported = export_arm_outputs(
             exp=exp, manifest=manifest, cell=cell, attempt_id=attempt_id,
             output_dir=output_dir, target_dir=target_dir,
-            deadline_ts=deadline_ts,
+            deadline=deadline,
         )
     except Exception as error:  # noqa: BLE001 — output failure is terminal
         ledger.append(_terminal_record(
@@ -751,6 +915,18 @@ def _execute_attempt(
         status, reason_code = "failed_output", "controller_error_with_output"
     elif result["exit_code"] == 0:
         status, reason_code = "completed", "ok"
+        # Exit zero alone cannot mean clean (plan step E.5): the H arm's
+        # terminal stage health must be COMPLETE evidence with no
+        # degradation — lost findings/coverage/advisory data downgrade the
+        # cell out of the clean-completion rate while keeping the output.
+        if cell["arm"] == "h":
+            health = (
+                exported.get("provenance", {}).get("h_stage_health")
+                or {}
+            )
+            if not health.get("clean"):
+                status = "failed_output"
+                reason_code = "degraded_stage_health"
     else:
         status, reason_code = (
             "failed_output", f"arm_exit_{result['exit_code']}"

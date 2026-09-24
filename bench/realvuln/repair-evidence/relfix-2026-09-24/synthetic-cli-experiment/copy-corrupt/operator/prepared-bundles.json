@@ -1,0 +1,16 @@
+{
+  "realvuln-alpha#trial1": {
+    "bundles_dir": "/tmp/relfix-synth/exp/attempts/bundles-realvuln-alpha-t1",
+    "digest": "bb197d8457f2592e2691463d6b91efad845bd170fc7b1648849044c9e75c83a1",
+    "dropped_paths": [],
+    "canary": null,
+    "prepared_at": 1790246068.4959428
+  },
+  "realvuln-beta#trial1": {
+    "bundles_dir": "/tmp/relfix-synth/exp/attempts/bundles-realvuln-beta-t1",
+    "digest": "bb197d8457f2592e2691463d6b91efad845bd170fc7b1648849044c9e75c83a1",
+    "dropped_paths": [],
+    "canary": null,
+    "prepared_at": 1790246071.4962876
+  }
+}

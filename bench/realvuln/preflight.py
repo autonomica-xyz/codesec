@@ -164,17 +164,35 @@ def run_preflight(spec: dict, *, offline: bool = True) -> dict:
     # (failure-injection covered by the manifest gate above; here the
     # happy path with a zero-cell corpus).
     try:
+        import hashlib
         import tempfile
 
         from bench.realvuln.experiment import cmd_freeze, cmd_verify, load_manifest
         with tempfile.TemporaryDirectory() as td:
             td = Path(td)
+            # Minimal REAL admission evidence: the machinery gate only
+            # needs the freeze path to carry a verifiable reference
+            # (production calibration freezes supply the real suite doc).
+            iso = td / "iso-evidence.json"
+            iso.write_text(json.dumps({
+                "ran_at": 0.0, "passed": True,
+                "checks": [{"name": "synthetic", "passed": True}],
+                "image_id": "synthetic",
+            }))
             spec_path = td / "spec.json"
             spec_path.write_text(json.dumps({
                 "protocol_version": 2,
+                "purpose": "calibration",
                 "repos": [], "seed": 20260922,
                 "benchmark_pin": "synthetic",
                 "realvuln_root": str(td),
+                "admission": {
+                    "isolation_evidence": {
+                        "path": str(iso),
+                        "sha256": hashlib.sha256(
+                            iso.read_bytes()).hexdigest(),
+                    },
+                },
                 "settings": {
                     "realvuln_root": str(td),
                     "gateway_url": "http://gateway:8800/v1",

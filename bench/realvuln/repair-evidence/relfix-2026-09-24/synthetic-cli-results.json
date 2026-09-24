@@ -1,0 +1,40 @@
+{
+ "freeze": {
+  "exit": 0,
+  "out": "frozen: /tmp/relfix-synth/exp\nmanifest sha256: e2c18007e79579b1b0f7eb6d145b9f35f29aabaaf82cac8d2871a8c94d87a888\nexpected cells: 4"
+ },
+ "run": {
+  "exit": 1,
+  "out": "run finished with failures (1):\n  7d5528755b2d69f1: missing_output: missing valid V findings output: /tmp/relfix-synth/exp/attempts/att-3f22bf48b1a8/output/findings.json (no eligible pre-deadline snapshot retained)"
+ },
+ "verify": {
+  "exit": 0,
+  "out": "verify OK: 4 cells complete and accounted"
+ },
+ "aggregate": {
+  "exit": 0,
+  "out": "l\": {\n    \"labeled_decoy\": 0,\n    \"duplicate_positive_match\": 0,\n    \"unmatched\": 0\n  },\n  \"terminal_status_counts\": {\n    \"completed\": 1,\n    \"failed_output\": 2,\n    \"failed_no_output\": 1\n  },\n  \"clean_completion_rate\": 0.25,\n  \"complete_pair_diagnostic\": {\n    \"note\": \"survivorship-prone subset; diagnostic only\",\n    \"sample_sizes\": {\n      \"trial1\": 2\n    },\n    \"excluded\": []\n  },\n  \"usage\": {\n    \"records_found\": 0,\n    \"records_missing_unknown\": 0,\n    \"note\": \"missing usage is unknown, never zero cost\"\n  }\n}\n# headline: H F3 100.0 vs V F3 52.6 \u2014 decision: does_not_meet_success_criterion"
+ },
+ "mutations": {
+  "late_invalidation": {
+   "verify": {
+    "exit": 1,
+    "out": "verify FAILED (1 problems):\n  cell f4fda7b9ed10ee5a: protocol invalidation recorded (probe) \u2014 comparison invalidated"
+   },
+   "aggregate": {
+    "exit": 1,
+    "out": "\"unmatched\": 0\n  },\n  \"terminal_status_counts\": {\n    \"completed\": 1,\n    \"failed_output\": 2,\n    \"failed_no_output\": 1\n  },\n  \"clean_completion_rate\": 0.25,\n  \"complete_pair_diagnostic\": {\n    \"note\": \"survivorship-prone subset; diagnostic only\",\n    \"sample_sizes\": {\n      \"trial1\": 2\n    },\n    \"excluded\": []\n  },\n  \"usage\": {\n    \"records_found\": 0,\n    \"records_missing_unknown\": 0,\n    \"note\": \"missing usage is unknown, never zero cost\"\n  }\n}\n# aggregation incomplete: 1 problem(s); headline withheld\n  - cell f4fda7b9ed10ee5a: protocol invalidation recorded (probe) \u2014 comparison invalidated"
+   }
+  },
+  "corrupt_committed": {
+   "verify": {
+    "exit": 1,
+    "out": "verify FAILED (1 problems):\n  cell f4fda7b9ed10ee5a: committed evidence present but invalid (truncated primary artifact) \u2014 integrity failure"
+   },
+   "aggregate": {
+    "exit": 1,
+    "out": "pletion_rate\": 0.25,\n  \"complete_pair_diagnostic\": {\n    \"note\": \"survivorship-prone subset; diagnostic only\",\n    \"sample_sizes\": {\n      \"trial1\": 1\n    },\n    \"excluded\": [\n      \"realvuln-alpha#t1\"\n    ]\n  },\n  \"usage\": {\n    \"records_found\": 0,\n    \"records_missing_unknown\": 0,\n    \"note\": \"missing usage is unknown, never zero cost\"\n  }\n}\n# aggregation incomplete: 2 problem(s); headline withheld\n  - cell f4fda7b9ed10ee5a: committed evidence present but invalid (truncated primary artifact) \u2014 integrity failure\n  - trial 1 arm h: no counts for ['realvuln-alpha'] (cannot pool a partial trial)"
+   }
+  }
+ }
+}

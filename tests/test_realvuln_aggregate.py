@@ -21,6 +21,12 @@ from bench.realvuln.ledger import AttemptLedger
 FAKE_SCORER = agg._fake_scorer_factory()
 
 
+def _admit(tmp_path: Path, spec: dict) -> dict:
+    from tests._admission import add_calibration_admission
+
+    return add_calibration_admission(tmp_path, spec)
+
+
 def _mini_realvuln(tmp_path: Path, repos, vulns_per_repo=2) -> Path:
     rv = tmp_path / "rv"
     for repo in repos:
@@ -65,7 +71,7 @@ def _freeze_exp(tmp_path: Path, repos, monkeypatch) -> Path:
     monkeypatch.setattr(
         exp_mod, "_image_profile_endpoints",
         lambda image: {"http://gateway:8800/v1"})
-    spec = {
+    spec = _admit(tmp_path, {
         "protocol_version": 2,
         "repos": list(repos), "seed": 20260922,
         "benchmark_pin": "7a710251f55c17d32d3adcb13d37468e2e3b9e4a",
@@ -89,7 +95,7 @@ def _freeze_exp(tmp_path: Path, repos, monkeypatch) -> Path:
         "primary_metric": "strict micro F3",
         "image": {"tag": "codesec-iso", "image_id": "sha256:" + "ab" * 32},
         "isolation_evidence_sha256": "0" * 64,
-    }
+    })
     spec_path = tmp_path / "protocol.json"
     spec_path.write_text(json.dumps(spec))
     exp = tmp_path / "exp"

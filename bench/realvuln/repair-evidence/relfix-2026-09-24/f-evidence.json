@@ -1,0 +1,266 @@
+{
+ "generated": "2026-09-24",
+ "step": "F",
+ "experiments": {
+  "calib-relfix-dh-20260924-01": {
+   "note": "upstream-unreachable evidence (test gateway lacked egress initially): trusted admission records exist; H bounded 4-attempt retry backoff then deadline_no_output; V fast failure (missing_output). Unintended but genuine dead-upstream handling evidence.",
+   "cells": {
+    "e62898f2f20dade7": {
+     "status": "failed_no_output",
+     "reason_code": "deadline_no_output",
+     "duration_s": 150.21,
+     "exit_status": 143,
+     "timed_out": true,
+     "made_inference_requests": true,
+     "source": null,
+     "capture_sha256": null,
+     "stage_health_clean": null,
+     "container": "codesec-iso-e654d74e866d"
+    },
+    "e62a695a213dd3fa": {
+     "status": "failed_no_output",
+     "reason_code": "missing_output",
+     "duration_s": 16.52,
+     "exit_status": 1,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": null,
+     "capture_sha256": null,
+     "stage_health_clean": null,
+     "container": "codesec-iso-cbff58a820aa"
+    }
+   },
+   "committed": {},
+   "usage": {
+    "h_requests": 3,
+    "h_prompt_tokens": 0,
+    "h_completion_tokens": 0,
+    "v_requests": 4,
+    "v_prompt_tokens": 0,
+    "v_completion_tokens": 0,
+    "?_requests": 1,
+    "?_prompt_tokens": 0,
+    "?_completion_tokens": 0
+   }
+  },
+  "calib-relfix-dh-20260924-03": {
+   "note": "H deadline at 150s ceiling: internal budget+reserve stopped H at 121.5s (exit 1, arm_exit_1), operator-owned checkpoint capture exported (0 findings at that point), degraded (not clean). V completed 15.5s with 5 findings (parity + smoke).",
+   "cells": {
+    "e62898f2f20dade7": {
+     "status": "failed_output",
+     "reason_code": "arm_exit_1",
+     "duration_s": 121.53,
+     "exit_status": 1,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": "report.checkpoint.json",
+     "capture_sha256": "fee56d1032110cba82c3fccb98e67f147b8f62f97fe91d745279716bf086b5e1",
+     "stage_health_clean": false,
+     "container": "codesec-iso-ecdab3d01937"
+    },
+    "e62a695a213dd3fa": {
+     "status": "completed",
+     "reason_code": "ok",
+     "duration_s": 15.5,
+     "exit_status": 0,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": "retained_snapshot",
+     "capture_sha256": "13fb38c55d69094b68979af8c057ec6115ca0708b3b18847bd122ca2f4963c30",
+     "stage_health_clean": null,
+     "container": "codesec-iso-40c60d164f3e"
+    }
+   },
+   "committed": {
+    "e62898f2f20dade7": {
+     "attempt": "att-1942580b80b1",
+     "results": 0
+    },
+    "e62a695a213dd3fa": {
+     "attempt": "att-c05186fa56f6",
+     "results": 5
+    }
+   },
+   "usage": {
+    "h_requests": 46,
+    "h_prompt_tokens": 205764,
+    "h_completion_tokens": 12560,
+    "v_requests": 4,
+    "v_prompt_tokens": 7278,
+    "v_completion_tokens": 849
+   }
+  },
+  "calib-relfix-dv-20260924-01": {
+   "note": "V DEADLINE at 9s ceiling: Pi mid-flight (3 admission/terminal pairs), timed_out, failed_no_output (no eligible snapshot) \u2014 paired with hr-01 nonempty recovery, not claimed equal. H at 9s < 30s reserve: setup_failed/no_inference (correct refusal to start model work).",
+   "cells": {
+    "e62898f2f20dade7": {
+     "status": "setup_failed",
+     "reason_code": "no_inference",
+     "duration_s": 0.98,
+     "exit_status": 1,
+     "timed_out": false,
+     "made_inference_requests": false,
+     "source": null,
+     "capture_sha256": null,
+     "stage_health_clean": null,
+     "container": "codesec-iso-a18c5d595c16"
+    },
+    "e62a695a213dd3fa": {
+     "status": "failed_no_output",
+     "reason_code": "deadline_no_output",
+     "duration_s": 9.15,
+     "exit_status": 143,
+     "timed_out": true,
+     "made_inference_requests": true,
+     "source": null,
+     "capture_sha256": null,
+     "stage_health_clean": null,
+     "container": "codesec-iso-d88ddaa7f812"
+    }
+   },
+   "committed": {},
+   "usage": {
+    "v_requests": 3,
+    "v_prompt_tokens": 4769,
+    "v_completion_tokens": 912
+   }
+  },
+  "calib-relfix-hs-20260924-01": {
+   "note": "CLEAN SMOKE + actual parity: H completed 430s exit 0, report.json, stage health clean=True, 5 findings; V completed 15.7s, 6 findings. New image f08faaa8\u2026, all repairs active.",
+   "cells": {
+    "e62898f2f20dade7": {
+     "status": "completed",
+     "reason_code": "ok",
+     "duration_s": 430.25,
+     "exit_status": 0,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": "report.json",
+     "capture_sha256": "5286b5f1318010b8f7cc6ed713f3e8497f818397bf4b65f5fd4ad52011300977",
+     "stage_health_clean": true,
+     "container": "codesec-iso-3c136f2a0e0b"
+    },
+    "e62a695a213dd3fa": {
+     "status": "completed",
+     "reason_code": "ok",
+     "duration_s": 15.67,
+     "exit_status": 0,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": "retained_snapshot",
+     "capture_sha256": "7d8acdf85346c46238d5c8a706da9cf7278506fc5c53a450474422b998657405",
+     "stage_health_clean": null,
+     "container": "codesec-iso-768925b320b8"
+    }
+   },
+   "committed": {
+    "e62898f2f20dade7": {
+     "attempt": "att-4eabd45599f8",
+     "results": 5
+    },
+    "e62a695a213dd3fa": {
+     "attempt": "att-257c39a9b017",
+     "results": 6
+    }
+   },
+   "usage": {
+    "h_requests": 140,
+    "h_prompt_tokens": 661593,
+    "h_completion_tokens": 43176,
+    "v_requests": 4,
+    "v_prompt_tokens": 7496,
+    "v_completion_tokens": 1049
+   }
+  },
+  "calib-relfix-hr-20260924-01": {
+   "note": "NONEMPTY TIMEOUT RECOVERY: H stopped at 211.9s of 240s ceiling (exit 1), checkpoint snapshot export with 3 findings committed, failed_output/degraded (health clean=False). V completed, 6 findings.",
+   "cells": {
+    "e62898f2f20dade7": {
+     "status": "failed_output",
+     "reason_code": "arm_exit_1",
+     "duration_s": 211.86,
+     "exit_status": 1,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": "report.checkpoint.json",
+     "capture_sha256": "5895f71d278d111a5521f1fc6f040ac035cf46e6e7f819241471335f5f4723d6",
+     "stage_health_clean": false,
+     "container": "codesec-iso-409720568693"
+    },
+    "e62a695a213dd3fa": {
+     "status": "completed",
+     "reason_code": "ok",
+     "duration_s": 17.4,
+     "exit_status": 0,
+     "timed_out": false,
+     "made_inference_requests": true,
+     "source": "retained_snapshot",
+     "capture_sha256": "e584f1803380fc99ad45045c4fdb2f39dcfff8341d6b64649af86ffcf3743a26",
+     "stage_health_clean": null,
+     "container": "codesec-iso-2db774bd96fc"
+    }
+   },
+   "committed": {
+    "e62898f2f20dade7": {
+     "attempt": "att-2fa4584245a9",
+     "results": 3
+    },
+    "e62a695a213dd3fa": {
+     "attempt": "att-a50cb34f2d93",
+     "results": 6
+    }
+   },
+   "usage": {
+    "h_requests": 70,
+    "h_prompt_tokens": 316304,
+    "h_completion_tokens": 19226,
+    "v_requests": 5,
+    "v_prompt_tokens": 9242,
+    "v_completion_tokens": 937
+   }
+  },
+  "calib-relfix-net-20260924-01": {
+   "note": "DEAD-ENDPOINT image 78d7e42b\u2026 (gateway-dead alias never attached): H bounded retries then arm_exit_1 (empty checkpoint committed); V connection error 14.5s. No gateway records exist -> attribution unknown -> verify FAILED (2 attribution problems) and aggregate withheld headline BY DESIGN (never guess). Compare dh-01 for dead-UPSTREAM with trusted records.",
+   "cells": {
+    "e62898f2f20dade7": {
+     "status": "failed_output",
+     "reason_code": "arm_exit_1",
+     "duration_s": 91.14,
+     "exit_status": 1,
+     "timed_out": false,
+     "made_inference_requests": null,
+     "source": "report.checkpoint.json",
+     "capture_sha256": "fb0210edd77943870d4819d7813a25530691c41f9195b87389cdd2eaf80f3985",
+     "stage_health_clean": false,
+     "container": "codesec-iso-e02aa288e3f2"
+    },
+    "e62a695a213dd3fa": {
+     "status": "failed_no_output",
+     "reason_code": "missing_output",
+     "duration_s": 14.51,
+     "exit_status": 1,
+     "timed_out": false,
+     "made_inference_requests": null,
+     "source": null,
+     "capture_sha256": null,
+     "stage_health_clean": null,
+     "container": "codesec-iso-d69783fcce18"
+    }
+   },
+   "committed": {
+    "e62898f2f20dade7": {
+     "attempt": "att-9bd8591411b1",
+     "results": 0
+    }
+   },
+   "usage": {}
+  }
+ },
+ "images": {
+  "codesec-iso-relfix-20260924": "sha256:f08faaa8aaa775ead2aa54a7c8c540d63c6607a14033a180359fc3b3a87562ad",
+  "codesec-iso-relfix-deadgw-20260924": "sha256:78d7e42bb3a52f66f27ed6988d9ccfcbab046c4b4a21c27d3e059749ba5a8820",
+  "note": "Both built 2026-09-24 from the repaired source with unused tags; shared codesec-iso tag untouched (restored to the matrix-pinned image after the F.2 test-isolation fix)."
+ },
+ "container_cleanup": "docker ps -a --filter name=codesec-iso -> 0 containers after every run; test gateway codesec-gateway-relfix removed; shared codesec-gateway never disconnected.",
+ "config": "config/zai-glm53-experiment.yaml endpoint temporarily pointed at test aliases during builds/runs and restored byte-identical afterwards (git diff empty)."
+}

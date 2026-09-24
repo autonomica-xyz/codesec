@@ -1,0 +1,23 @@
+{
+  "seed": 7,
+  "blocks": [
+    {
+      "repo": "realvuln-alpha",
+      "trial": 1,
+      "first_arm": "h",
+      "arm_sequence": [
+        "h",
+        "v"
+      ]
+    },
+    {
+      "repo": "realvuln-beta",
+      "trial": 1,
+      "first_arm": "h",
+      "arm_sequence": [
+        "h",
+        "v"
+      ]
+    }
+  ]
+}

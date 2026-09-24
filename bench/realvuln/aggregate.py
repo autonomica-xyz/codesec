@@ -380,7 +380,13 @@ def aggregate_experiment(
     repos = sorted({c["repo"] for c in manifest["expected_cells"]})
     trials = sorted({c["trial"] for c in manifest["expected_cells"]})
 
-    problems: list[str] = []
+    from bench.realvuln.experiment import (
+        INCOMPLETE,
+        cell_validity,
+        manifest_assignment_problems,
+    )
+
+    problems: list[str] = list(manifest_assignment_problems(manifest))
     cells_report: dict[str, dict] = {}
     repo_counts: dict[tuple, dict] = {}
     fp_taxonomy_total = Counter()
@@ -414,87 +420,35 @@ def aggregate_experiment(
 
     for cell in manifest["expected_cells"]:
         key = (cell["repo"], cell["trial"], cell["arm"])
-        committed = exp_path / "committed" / cell["cell_id"]
-        done = arm_done(
-            committed, manifest=manifest, arm=cell["arm"],
-            repo=cell["repo"], trial=cell["trial"],
-        )
+        validity = cell_validity(exp_path, manifest, cell, ledger=ledger)
+        # Aggregation performs its OWN validity check (plan step C.4) —
+        # every problem class, including incompleteness, withholds the
+        # headline; only honest accounted absence scores empty.
+        for cls, message in validity["problems"]:
+            problems.append(message)
         entry: dict = {"cell_id": cell["cell_id"], "arm": cell["arm"]}
-        if done["done"]:
-            document = json.loads(
-                (committed / done["marker"]["primary_path"]).read_text()
-            )
+        state = validity["state"]
+        document = None
+        if validity["mode"] == "committed":
+            document = json.loads(validity["primary_path"].read_text())
             entry["source"] = "committed"
-            # Committed-but-ledgerless is invalid: the marker's attempt
-            # must have a terminal record in this experiment's ledger.
-            state = ledger.terminal_state(cell["cell_id"])
-            if state is None:
-                problems.append(
-                    f"cell {cell['cell_id']}: committed artifact has no "
-                    "terminal ledger state — invalid"
-                )
-            elif state.get("attribution_inconsistent"):
-                problems.append(
-                    f"cell {cell['cell_id']}: inconsistent inference "
-                    "attribution — invalid"
-                )
-            elif done["marker"].get("attempt_id") and (
-                state.get("attempt_id")
-                != done["marker"].get("attempt_id")
-            ):
-                problems.append(
-                    f"cell {cell['cell_id']}: committed attempt "
-                    f"{done['marker'].get('attempt_id')} is not the "
-                    f"operational primary ({state.get('attempt_id')})"
-                )
+            entry["attempt_id"] = validity["marker"].get("attempt_id")
             if state is not None and state.get("status") != "completed":
                 # A degraded terminal state (timeout-recovered output,
-                # nonzero exit) is committed evidence, but it must be
-                # reported — never silently upgraded to clean.
+                # nonzero exit, degraded stage health) is committed
+                # evidence, but it must be reported — never silently
+                # upgraded to clean.
                 entry["degraded"] = state.get("status")
                 entry["reason_code"] = state.get("reason_code")
+        elif validity["mode"] == "no_output":
+            entry["source"] = "operational_failure"
+            entry["output_failure"] = True
+            # Operational primary with no valid snapshot: empty
+            # predictions (all scored positives FN, decoys TN). Never
+            # labeled agent-authored.
+            document = {"results": []}
         else:
-            state = ledger.terminal_state(cell["cell_id"])
-            if state is None:
-                problems.append(
-                    f"cell {cell['cell_id']} ({cell['repo']} t{cell['trial']} "
-                    f"{cell['arm']}) has no terminal ledger state"
-                )
-                entry["source"] = "unaccounted"
-                document = None
-            elif state["status"] == "setup_failed":
-                attempts = ledger.attempts(cell["cell_id"])
-                if not any(a.get("made_inference_requests") for a in attempts):
-                    problems.append(
-                        f"cell {cell['cell_id']}: unrecoverable setup failure "
-                        "with zero inference — experiment incomplete"
-                    )
-                entry["source"] = "setup_failed"
-                document = None
-            elif state["status"] in {"failed_no_output", "failed_output"}:
-                if state["status"] == "failed_no_output":
-                    entry["output_failure"] = True
-                if state["status"] == "failed_output" and not done["done"]:
-                    entry["output_failure"] = True
-                entry["source"] = "operational_failure"
-                # Operational primary with no valid snapshot: empty
-                # predictions (all scored positives FN, decoys TN). Never
-                # labeled agent-authored.
-                document = {"results": []}
-            elif state["status"] == "invalidated":
-                problems.append(
-                    f"cell {cell['cell_id']}: protocol breach recorded — "
-                    "comparison invalidated"
-                )
-                entry["source"] = "invalidated"
-                document = None
-            else:
-                problems.append(
-                    f"cell {cell['cell_id']}: terminal state "
-                    f"{state['status']} without committed output"
-                )
-                entry["source"] = state["status"]
-                document = None
+            entry["source"] = validity["mode"]
 
         if document is not None:
             gt = load_ground_truth(

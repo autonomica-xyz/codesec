@@ -786,6 +786,8 @@ def run_local_agent(
     final_text = ""
     turns = 0
     repair_used = False
+    payload: dict | None = None
+    repairs: dict = {}
     started = time.time()
 
     with artifact_path.open("w") as art:
@@ -977,8 +979,11 @@ def run_local_agent(
         # JSON was cut off. The tool schema stays byte-stable for KV reuse.
         final_text = _continue_json(final_text)
 
-        # schema validation + one repair turn
-        errors = _validate(final_text, schema_file)
+        # schema validation + one repair turn (validated-payload path:
+        # extraction dispatch guard, envelope repair, advisory quarantine
+        # — every deterministic intervention is recorded and later
+        # surfaced as stage-health degradation, never silent)
+        errors, payload, repairs = _validated_payload(final_text, schema_file)
         while errors and repair_attempts > 0:
             repair_attempts -= 1
             repair_used = True
@@ -1001,7 +1006,9 @@ def run_local_agent(
                 {"role": "assistant", "content": final_text}
             )
             final_text = _continue_json(final_text)
-            errors = _validate(final_text, schema_file)
+            errors, payload, repairs = _validated_payload(
+                final_text, schema_file
+            )
 
         if errors:
             # If repair turned into tool-markup, retry validation against the
@@ -1011,23 +1018,20 @@ def run_local_agent(
                     if prev.get("role") == "assistant" and isinstance(prev.get("content"), str):
                         cand = prev.get("content") or ""
                         if cand.strip() and not _looks_like_tool_markup(cand):
-                            alt_err = _validate(cand, schema_file)
-                            if not alt_err:
+                            alt_errors, alt_payload, alt_repairs = \
+                                _validated_payload(cand, schema_file)
+                            if not alt_errors:
                                 final_text = cand
-                                errors = []
+                                errors, payload, repairs = (
+                                    alt_errors, alt_payload, alt_repairs)
                                 _w({"kind": "recovered_from_markup", "from_repair": True})
                                 break
             if errors:
                 _w({"kind": "schema_errors", "errors": errors, "final_text_head": (final_text or "")[:500]})
                 raise AgentRunError(f"[{stage}/{artifact_name}] schema validation failed: {errors[:5]}")
 
-        payload = _normalize_stage_payload(extract_json(final_text), schema_file)
-        # final hard check after normalize
-        post_errs = validate_schema(payload, schema_file)
-        if post_errs:
-            _w({"kind": "schema_errors", "errors": post_errs, "phase": "post_normalize"})
-            raise AgentRunError(f"[{stage}/{artifact_name}] schema validation failed: {post_errs[:5]}")
-        _w({"kind": "final_payload", "payload": payload})
+        _w({"kind": "final_payload", "payload": payload,
+            "repairs": repairs or None})
 
     cache_hit = usage_tot["cached"] > 0 and usage_tot["prompt_tokens"] > 0
     if turns > 1:
@@ -1050,6 +1054,7 @@ def run_local_agent(
         session_id=None,
         artifact_path=artifact_path,
         repair_used=repair_used,
+        repairs=dict(repairs),
         raw_result_message={"engine": "local", "model": model,
                             "usage": usage_tot, "base_url": base_url},
     )
@@ -1105,12 +1110,22 @@ def _build_repair_prompt(schema_file: Path, errors: list[str]) -> str:
     )
 
 
-def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
+def _normalize_stage_payload(
+    payload: Any, schema_file: Path, quarantine_out: list | None = None
+) -> Any:
     """Best-effort coercion of near-valid stage JSON into schema shape.
 
     Models often emit hunt tasks with `subsystem` instead of `rationale`, or
     put recon JSON inside proprietary tool-call markup. This keeps the pipeline
     moving when the semantic content is present.
+
+    Advisory (`gaps_observed`) normalization is narrowly scoped and loss is
+    NEVER silent: nested advisory arrays are flattened (an equivalent
+    representation), a single advisory object/string is wrapped, and items
+    that cannot be preserved faithfully are quarantined into
+    ``quarantine_out`` (recorded as degradation). Security findings are NOT
+    coerced out of invalid shapes — an invalid findings envelope stays
+    invalid and fails validation honestly (plan step E.3/E.4).
 
     Hunt (finding.schema.json) commonly re-echoes the input task fields
     (attack_class/priority/...) alongside findings; strip those extras and
@@ -1145,122 +1160,148 @@ def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
         out.setdefault("findings", [])
         out.setdefault("gaps_observed", [])
         if not isinstance(out.get("findings"), list):
-            out["findings"] = []
-        if not isinstance(out.get("gaps_observed"), list):
-            out["gaps_observed"] = []
+            # An invalid findings envelope must fail validation honestly —
+            # never silently converted into an "intentional empty report".
+            pass
+        gaps_raw = out.get("gaps_observed")
+        if isinstance(gaps_raw, dict):
+            gaps_raw = [gaps_raw]  # one advisory object — unambiguous
+        elif isinstance(gaps_raw, str) and gaps_raw.strip():
+            gaps_raw = [{
+                "file_or_subsystem": gaps_raw,
+                "reason": "not fully examined",
+            }]
+        if not isinstance(gaps_raw, list):
+            gaps_raw = [gaps_raw]  # keep for schema to reject honestly
+        quarantine = quarantine_out if quarantine_out is not None else []
+        # Flatten nested advisory arrays: [[g1, g2], g3] -> [g1, g2, g3]
+        # (an equivalent representation, not new content).
+        flattened: list[Any] = []
+        for item in gaps_raw:
+            if isinstance(item, list):
+                flattened.extend(item)
+            else:
+                flattened.append(item)
+        out["gaps_observed"] = flattened
 
-        # Normalize findings items lightly
+        # Normalize findings items lightly. A non-list findings value is
+        # left untouched so the schema rejects it honestly (never coerced
+        # into an invented empty report).
         norm_findings = []
-        for i, finding in enumerate(out["findings"]):
-            if not isinstance(finding, dict):
-                continue
-            f = dict(finding)
-            # common alias fixes
-            if "file" not in f and "path" in f:
-                f["file"] = f.pop("path")
-            if "vuln_class" not in f:
-                for alt in ("attack_class", "class", "vulnerability_class", "type"):
-                    if f.get(alt):
-                        f["vuln_class"] = f.get(alt)
-                        break
-            if "finding_id" not in f or not f.get("finding_id"):
-                tid = re.sub(r"[^a-z0-9_-]+", "-", str(out.get("task_id") or "task").lower())
-                f["finding_id"] = f"f_{tid[:40]}_{i+1}"
-            # finding_id pattern
-            fid = re.sub(r"[^a-z0-9_-]+", "-", str(f.get("finding_id")).lower()).strip("-")
-            if not fid.startswith("f_"):
-                fid = "f_" + fid
-            f["finding_id"] = fid[:66]
-            # line numbers
-            for lk in ("line_start", "line_end"):
-                if lk in f:
+        findings_value = out.get("findings")
+        if isinstance(findings_value, list):
+            for i, finding in enumerate(findings_value):
+                if not isinstance(finding, dict):
+                    continue
+                f = dict(finding)
+                # common alias fixes
+                if "file" not in f and "path" in f:
+                    f["file"] = f.pop("path")
+                if "vuln_class" not in f:
+                    for alt in ("attack_class", "class", "vulnerability_class", "type"):
+                        if f.get(alt):
+                            f["vuln_class"] = f.get(alt)
+                            break
+                if "finding_id" not in f or not f.get("finding_id"):
+                    tid = re.sub(r"[^a-z0-9_-]+", "-", str(out.get("task_id") or "task").lower())
+                    f["finding_id"] = f"f_{tid[:40]}_{i+1}"
+                # finding_id pattern
+                fid = re.sub(r"[^a-z0-9_-]+", "-", str(f.get("finding_id")).lower()).strip("-")
+                if not fid.startswith("f_"):
+                    fid = "f_" + fid
+                f["finding_id"] = fid[:66]
+                # line numbers
+                for lk in ("line_start", "line_end"):
+                    if lk in f:
+                        try:
+                            f[lk] = max(1, int(f[lk]))
+                        except Exception:
+                            pass
+                if "line_end" in f and "line_start" in f:
                     try:
-                        f[lk] = max(1, int(f[lk]))
+                        if int(f["line_end"]) < int(f["line_start"]):
+                            f["line_end"] = f["line_start"]
                     except Exception:
                         pass
-            if "line_end" in f and "line_start" in f:
-                try:
-                    if int(f["line_end"]) < int(f["line_start"]):
-                        f["line_end"] = f["line_start"]
-                except Exception:
-                    pass
-            # severity enum coerce
-            sev = str(f.get("severity") or "").lower().strip()
-            sev_map = {
-                "crit": "critical", "critical": "critical",
-                "hi": "high", "high": "high",
-                "med": "medium", "medium": "medium", "moderate": "medium",
-                "lo": "low", "low": "low",
-                "info": "informational", "informational": "informational",
-                "none": "informational",
-            }
-            if sev in sev_map:
-                f["severity"] = sev_map[sev]
-            # confidence
-            if "confidence" in f:
-                try:
-                    c = float(f["confidence"])
-                    if c > 1.0 and c <= 100.0:
-                        c = c / 100.0
-                    f["confidence"] = max(0.0, min(1.0, c))
-                except Exception:
-                    f["confidence"] = 0.5
-            # cwe normalize
-            if "cwe" in f and f["cwe"] is not None:
-                cwe = str(f["cwe"]).strip().upper()
-                m = re.search(r"(\d+)", cwe)
-                if m:
-                    f["cwe"] = f"CWE-{int(m.group(1))}"
-                elif not cwe:
-                    f.pop("cwe", None)
-            # poc cleanup if partial
-            poc = f.get("poc")
-            if isinstance(poc, dict):
-                if not all(k in poc for k in ("language", "code", "succeeded")):
-                    # drop incomplete poc rather than fail whole payload
+                # severity enum coerce
+                sev = str(f.get("severity") or "").lower().strip()
+                sev_map = {
+                    "crit": "critical", "critical": "critical",
+                    "hi": "high", "high": "high",
+                    "med": "medium", "medium": "medium", "moderate": "medium",
+                    "lo": "low", "low": "low",
+                    "info": "informational", "informational": "informational",
+                    "none": "informational",
+                }
+                if sev in sev_map:
+                    f["severity"] = sev_map[sev]
+                # confidence
+                if "confidence" in f:
+                    try:
+                        c = float(f["confidence"])
+                        if c > 1.0 and c <= 100.0:
+                            c = c / 100.0
+                        f["confidence"] = max(0.0, min(1.0, c))
+                    except Exception:
+                        f["confidence"] = 0.5
+                # cwe normalize
+                if "cwe" in f and f["cwe"] is not None:
+                    cwe = str(f["cwe"]).strip().upper()
+                    m = re.search(r"(\d+)", cwe)
+                    if m:
+                        f["cwe"] = f"CWE-{int(m.group(1))}"
+                    elif not cwe:
+                        f.pop("cwe", None)
+                # poc cleanup if partial
+                poc = f.get("poc")
+                if isinstance(poc, dict):
+                    if not all(k in poc for k in ("language", "code", "succeeded")):
+                        # drop incomplete poc rather than fail whole payload
+                        f.pop("poc", None)
+                    else:
+                        p = {
+                            "language": str(poc.get("language") or "unknown"),
+                            "code": str(poc.get("code") or ""),
+                            "succeeded": bool(poc.get("succeeded")),
+                        }
+                        for opt in ("compile_output", "run_output", "notes"):
+                            if opt in poc and poc[opt] is not None:
+                                p[opt] = str(poc[opt])
+                        f["poc"] = p
+                elif poc is not None:
                     f.pop("poc", None)
-                else:
-                    p = {
-                        "language": str(poc.get("language") or "unknown"),
-                        "code": str(poc.get("code") or ""),
-                        "succeeded": bool(poc.get("succeeded")),
-                    }
-                    for opt in ("compile_output", "run_output", "notes"):
-                        if opt in poc and poc[opt] is not None:
-                            p[opt] = str(poc[opt])
-                    f["poc"] = p
-            elif poc is not None:
-                f.pop("poc", None)
-            # conditions: list of attacker-precondition strings
-            if "conditions" in f:
-                conds = f["conditions"]
-                if isinstance(conds, list):
-                    f["conditions"] = [
-                        str(c) for c in conds if str(c).strip()
-                    ]
-                    if not f["conditions"]:
-                        f.pop("conditions")
-                elif not isinstance(conds, (list, type(None))):
-                    f.pop("conditions", None)
-            # live_evidence: drop when malformed rather than fail the payload
-            if "live_evidence" in f:
-                le = f["live_evidence"]
-                if isinstance(le, dict) and le.get("request") and le.get("response_excerpt"):
-                    f["live_evidence"] = {
-                        "request": str(le["request"])[:4000],
-                        "response_excerpt": str(le["response_excerpt"])[:4000],
-                    }
-                else:
-                    f.pop("live_evidence", None)
-            # allowlist finding fields
-            allowed_f = {
-                "finding_id", "file", "line_start", "line_end", "vuln_class",
-                "severity", "cwe", "description", "evidence_snippet", "poc",
-                "confidence", "hedged_language", "conditions", "live_evidence",
-            }
-            f = {k: f[k] for k in allowed_f if k in f}
-            norm_findings.append(f)
-        out["findings"] = norm_findings
+                # conditions: list of attacker-precondition strings
+                if "conditions" in f:
+                    conds = f["conditions"]
+                    if isinstance(conds, list):
+                        f["conditions"] = [
+                            str(c) for c in conds if str(c).strip()
+                        ]
+                        if not f["conditions"]:
+                            f.pop("conditions")
+                    elif not isinstance(conds, (list, type(None))):
+                        f.pop("conditions", None)
+                # live_evidence: drop when malformed rather than fail the payload
+                if "live_evidence" in f:
+                    le = f["live_evidence"]
+                    if isinstance(le, dict) and le.get("request") and le.get("response_excerpt"):
+                        f["live_evidence"] = {
+                            "request": str(le["request"])[:4000],
+                            "response_excerpt": str(le["response_excerpt"])[:4000],
+                        }
+                    else:
+                        f.pop("live_evidence", None)
+                # allowlist finding fields
+                allowed_f = {
+                    "finding_id", "file", "line_start", "line_end", "vuln_class",
+                    "severity", "cwe", "description", "evidence_snippet", "poc",
+                    "confidence", "hedged_language", "conditions", "live_evidence",
+                }
+                f = {k: f[k] for k in allowed_f if k in f}
+                norm_findings.append(f)
+        out["findings"] = norm_findings if isinstance(
+            findings_value, list
+        ) else findings_value
 
         # hardening notes: [{file, note}] — missing best practices, not findings
         if "hardening" in out:
@@ -1309,8 +1350,28 @@ def _normalize_stage_payload(payload: Any, schema_file: Path) -> Any:
             if isinstance(g, str):
                 g = {"file_or_subsystem": g, "reason": "not fully examined"}
             if not isinstance(g, dict):
+                # Advisory content that cannot be preserved faithfully is
+                # QUARANTINED and recorded — never silently dropped
+                # (plan step E.3).
+                quarantine.append({
+                    "field": "gaps_observed",
+                    "item": repr(g)[:200],
+                    "reason": "advisory item has no faithful gap-object form",
+                })
                 continue
             gg = dict(g)
+            if not any(
+                gg.get(k) for k in (
+                    "file_or_subsystem", "file", "subsystem", "area",
+                    "reason", "notes", "detail",
+                )
+            ):
+                quarantine.append({
+                    "field": "gaps_observed",
+                    "item": repr(g)[:200],
+                    "reason": "advisory object carries no advisory content",
+                })
+                continue
             if "file_or_subsystem" not in gg:
                 gg["file_or_subsystem"] = str(
                     gg.get("file") or gg.get("subsystem") or gg.get("area") or "unknown"
@@ -1511,12 +1572,74 @@ def _looks_like_tool_markup(text: str) -> bool:
 
 
 def _validate(text: str, schema_file: Path) -> list[str]:
+    errors, _payload, _repairs = _validated_payload(text, schema_file)
+    return errors
+
+
+def _validated_payload(text: str, schema_file: Path) -> tuple[list[str], Any, dict]:
+    """Extract + dispatch-check + normalize + schema-validate one model
+    message (2026-09-24 reliability plan, step E).
+
+    Returns (errors, payload-or-None, repairs). The repairs dict records
+    every deterministic intervention so it can surface as stage-health
+    degradation — never silently:
+
+    - ``envelope_repair``: bracket-level completion of a malformed JSON
+      envelope (structural bytes only; content survives verbatim).
+    - ``advisory_quarantined``: advisory (non-security) items that could
+      not be preserved faithfully and were discarded — recorded, never
+      silently dropped.
+
+    Dispatch guard: an object-root schema must never accept a nested
+    fragment the extractor salvaged from a malformed envelope (the saved
+    matrix failures shipped the gaps array AS the payload and reported it
+    as a schema-type error)."""
+    from codesec.json_utils import repair_json_envelope, diagnose_envelope
+
+    repairs: dict[str, Any] = {}
+    try:
+        schema = json.loads(schema_file.read_text())
+    except Exception:  # noqa: BLE001
+        schema = {}
+    object_root = schema.get("type") == "object"
+
+    payload = None
     try:
         payload = extract_json(text)
-    except ValueError as e:
-        return [f"json_extract: {e}"]
+    except ValueError:
+        payload = None
+    if payload is None or (object_root and not isinstance(payload, dict)):
+        fixed, fixes = repair_json_envelope(text)
+        if fixes or fixed is not None:
+            if fixed is not None and (
+                not object_root or isinstance(fixed, dict)
+            ):
+                payload = fixed
+                repairs["envelope_repair"] = fixes
+    if payload is None:
+        diag = diagnose_envelope(text)
+        return ([
+            "json_extract: could not parse assistant JSON. Structural "
+            f"diagnosis: {diag}. Re-emit the COMPLETE JSON object."
+        ], None, repairs)
+    if object_root and not isinstance(payload, dict):
+        diag = diagnose_envelope(text)
+        return ([
+            f"malformed envelope: extracted a top-level "
+            f"{type(payload).__name__}, but {schema_file.name} requires a "
+            f"JSON object (structural diagnosis: {diag}). Re-emit the "
+            "COMPLETE object — not a nested fragment."
+        ], None, repairs)
+    quarantine: list[dict] = []
     try:
-        payload = _normalize_stage_payload(payload, schema_file)
-    except Exception as e:
-        return [f"normalize: {e}"]
-    return validate_schema(payload, schema_file)
+        payload = _normalize_stage_payload(
+            payload, schema_file, quarantine_out=quarantine
+        )
+    except Exception as e:  # noqa: BLE001
+        return ([f"normalize: {e}"], None, repairs)
+    if quarantine:
+        repairs["advisory_quarantined"] = quarantine
+    errors = validate_schema(payload, schema_file)
+    if errors:
+        return (errors, None, repairs)
+    return ([], payload, repairs)

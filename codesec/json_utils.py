@@ -65,6 +65,154 @@ def _json_rank(obj: Any) -> int:
     return score
 
 
+def _walk_containers(text: str) -> list[str]:
+    """Structural diagnosis of why ``text`` is not valid JSON (plan step
+    E: the saved matrix failures were envelope bracket errors misread as
+    schema violations). Returns a list of human-readable findings; empty
+    means no structural problem was found at this level."""
+    problems: list[str] = []
+    stack: list[tuple[str, int]] = []
+    in_str = False
+    esc = False
+    for i, c in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+            continue
+        if c == '"':
+            in_str = True
+        elif c in "{[":
+            stack.append((c, i))
+        elif c in "}]":
+            if not stack:
+                problems.append(
+                    f"unmatched {c!r} at char {i} (nothing open)"
+                )
+                break
+            opener, opener_pos = stack.pop()
+            if (opener == "{" and c != "}") or (
+                opener == "[" and c != "]"
+            ):
+                problems.append(
+                    f"'{opener}' opened at char {opener_pos} is closed "
+                    f"by {c!r} at char {i} (bracket mismatch — a closer "
+                    f"of the other kind was needed)"
+                )
+                break
+    if not problems and stack:
+        problems.append(
+            f"{len(stack)} container(s) never closed: "
+            + ", ".join(
+                f"'{opener}' at char {pos}" for opener, pos in stack[:4]
+            )
+        )
+    if not problems and in_str:
+        problems.append("an unterminated string at end of output")
+    return problems
+
+
+def repair_json_envelope(text: str, *, max_fixes: int = 8) -> tuple[Any | None, list[str]]:
+    """Deterministically complete a malformed JSON ENVELOPE (2026-09-24
+    reliability plan, step E): insert the missing closer before a bracket
+    mismatch, append closers for dangling containers, drop trailing extra
+    closers, and truncate trailing data that follows a complete value
+    (recording the dropped bytes — recorded loss, never silent). Never
+    edits string content or values inside the repaired value — only
+    structural bytes — so emitted findings/advisories survive verbatim.
+    Returns (payload, applied_fixes); payload is None when no bounded
+    repair produced parseable JSON. Idempotent: repaired text parses, so
+    a second call applies no fixes."""
+    fixed = (text or "").strip()
+    applied: list[str] = []
+    for _ in range(max_fixes):
+        try:
+            return json.loads(fixed), applied
+        except json.JSONDecodeError as error:
+            if error.msg == "Extra data":
+                # A complete JSON value ends at error.pos; the model kept
+                # emitting structural/field bytes afterwards (continuation
+                # seams, duplicated closers). Keep the complete value and
+                # RECORD the dropped tail — visible degradation, and the
+                # tail is preserved verbatim in the record for audit.
+                dropped = fixed[error.pos:]
+                fixed = fixed[:error.pos].rstrip()
+                applied.append(
+                    f"truncated extra data after char {error.pos}: "
+                    f"{dropped[:400]!r}"
+                )
+                continue
+        problems = _walk_containers(fixed)
+        if not problems:
+            return None, applied
+        first = problems[0]
+        changed = False
+        if "is closed by" in first:
+            # '{' ... closed by ']'  → insert '}' before the wrong closer
+            # (or '[' ... closed by '}' → insert ']').
+            start = first.rfind("at char ") + len("at char ")
+            pos = int(first[start:].split()[0])
+            wrong = "]" if "']'" in first else "}"
+            right = "}" if wrong == "]" else "]"
+            fixed = fixed[:pos] + right + fixed[pos:]
+            applied.append(
+                f"inserted {right!r} at char {pos} (bracket mismatch)"
+            )
+            changed = True
+        elif "never closed" in first:
+            for opener, _pos in reversed(_open_containers(fixed)):
+                fixed += "}" if opener == "{" else "]"
+                applied.append(f"appended {opener!r} closer")
+            changed = True
+        elif "unmatched" in first:
+            start = first.rfind("at char ") + len("at char ")
+            pos = int(first[start:].split()[0])
+            dropped = fixed[pos:pos + 1]
+            fixed = fixed[:pos] + fixed[pos + 1:]
+            applied.append(
+                f"dropped unmatched closer {dropped!r} at char {pos}"
+            )
+            changed = True
+        if not changed:
+            return None, applied
+    try:
+        return json.loads(fixed), applied
+    except json.JSONDecodeError:
+        return None, applied
+
+
+def _open_containers(text: str) -> list[tuple[str, int]]:
+    stack: list[tuple[str, int]] = []
+    in_str = False
+    esc = False
+    for i, c in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+            continue
+        if c == '"':
+            in_str = True
+        elif c in "{[":
+            stack.append((c, i))
+        elif c in "}]":
+            if stack:
+                stack.pop()
+    return stack
+
+
+def diagnose_envelope(text: str) -> str:
+    """Human-readable structural diagnosis for repair prompts."""
+    problems = _walk_containers((text or "").strip())
+    return "; ".join(problems) if problems else "no bracket-level defect found"
+
+
 def extract_json(text: str) -> Any:
     """Pull a JSON object out of an assistant message.
 

@@ -1,0 +1,14 @@
+{
+  "arm": "h",
+  "attempt_id": "att-bd0c886d8f42",
+  "cell_id": "f4fda7b9ed10ee5a",
+  "committed_at": 1790246068.838063,
+  "experiment_id": "exp",
+  "manifest_sha256": "e2c18007e79579b1b0f7eb6d145b9f35f29aabaaf82cac8d2871a8c94d87a888",
+  "primary_path": "primary.semgrep.json",
+  "primary_sha256": "696e7574a575ed09642b867e91edf63025237e15ef60f2092b82aaa711179705",
+  "repo": "realvuln-alpha",
+  "secondary_path": "secondary-confirmed.semgrep.json",
+  "secondary_sha256": "696e7574a575ed09642b867e91edf63025237e15ef60f2092b82aaa711179705",
+  "trial": 1
+}

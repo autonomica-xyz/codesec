@@ -143,6 +143,20 @@ async def run_hunt(
 
             payload = result.payload
             db.record_agent_result(ctx.run_id, "hunt", task.task_id, result)
+            if getattr(result, "repairs", None):
+                # Deterministic output interventions (envelope bracket
+                # repair, advisory quarantine) are visible degradation,
+                # never a clean pass (plan step E.5).
+                db.record_stage_event(
+                    ctx.run_id,
+                    "hunt",
+                    {
+                        "category": "degraded",
+                        "reason": "model_output_repaired",
+                        "task_id": task.task_id,
+                        "repairs": result.repairs,
+                    },
+                )
             db.add_artifact(
                 ctx.run_id,
                 "hunt",

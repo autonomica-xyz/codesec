@@ -1,0 +1,13 @@
+{
+ "bytes": 188,
+ "captured_at": 1790246073.9337478,
+ "eligible": true,
+ "sha256": "cf32f8cc93c580add10a2eb410ce393946919e6aa42302aade348c9a77e9d00c",
+ "source": "/tmp/relfix-synth/exp/attempts/att-df4253fcb3ac/output/run/results/report/report.checkpoint.json",
+ "tags": {
+  "arm": "h",
+  "attempt_id": "att-df4253fcb3ac",
+  "cell_id": "1add34abf2a568d5",
+  "watch": "report.checkpoint.json"
+ }
+}
