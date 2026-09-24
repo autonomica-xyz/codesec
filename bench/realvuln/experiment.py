@@ -196,7 +196,6 @@ def build_manifest(spec: dict, *, experiment_id: str, expected_cells: list[dict]
         "thresholds": spec.get("thresholds", {}),
         "secondary_analyses": spec.get("secondary_analyses", []),
         "image": spec.get("image"),
-        "isolation_evidence_sha256": spec.get("isolation_evidence_sha256"),
         "admission": {
             "purpose": admission_purpose(spec),
             "evidence": {
@@ -464,14 +463,6 @@ def cmd_freeze(args: argparse.Namespace) -> int:
             src = Path(ref["path"])
             if src.is_file():
                 shutil.copyfile(src, admission_dir / f"{name}.json")
-    # Per-input digests so a later drift error can NAME what changed.
-    write_json(
-        exp / "operator" / "runtime-inputs.json",
-        {
-            name: sha256_file(Path(path))
-            for name, path in _runtime_hash_inputs().items()
-        },
-    )
     write_json(
         exp / "operator" / "schedule.json",
         {"seed": manifest["schedule"]["seed"], "blocks": schedule},
@@ -831,7 +822,7 @@ def cell_validity(
       evidence — genuinely empty predictions (operational failure).
     - ``setup_failed``: retries did not reach inference — the experiment
       is incomplete; no headline.
-    - ``invalidated`` / ``unaccounted`` / ``wrong_state`` / ``integrity``:
+    - ``invalidated`` / ``unaccounted`` / ``integrity``:
       see the returned problems.
     """
     exp = Path(exp)
@@ -993,7 +984,7 @@ def cell_validity(
         "committed output — integrity failure",
     ))
     return {
-        "mode": "wrong_state", "valid": False, "problems": problems,
+        "mode": "integrity", "valid": False, "problems": problems,
         "incomplete": False, "marker": None, "state": state,
         "primary_path": None,
     }
@@ -1021,20 +1012,12 @@ def _drift_check(exp: Path, manifest: dict, *, pending_cells: list[dict]) -> Non
     if current != recorded:
         recorded_inputs = set(runtime.get("inputs") or [])
         current_names = set(current_inputs)
-        changed = sorted(
-            name for name in recorded_inputs & current_names
-            if sha256_file(Path(current_inputs[name])) != _recorded_input_digest(
-                exp, name
-            )
-        )
         added = sorted(current_names - recorded_inputs)
         removed = sorted(recorded_inputs - current_names)
         detail = ""
-        if changed or added or removed:
-            detail = (
-                f" (changed: {changed[:5]}, added: {added[:5]}, "
-                f"removed: {removed[:5]})"
-            )
+        if added or removed:
+            detail = (f" (added: {added[:5]}, removed: {removed[:5]}; "
+                      "file list in manifest.runtime.inputs)")
         raise SystemExit(
             f"runtime drift: current runtime tree {current[:16]}… != frozen "
             f"{recorded[:16]}…{detail} — refusing to admit new cells under "
@@ -1058,18 +1041,6 @@ def _drift_check(exp: Path, manifest: dict, *, pending_cells: list[dict]) -> Non
                 f"runtime drift check: pinned image {image_id} now resolves "
                 f"to {resolved} — refusing to admit new cells"
             )
-
-
-def _recorded_input_digest(exp: Path, name: str) -> str:
-    """Digest of a runtime input recorded at freeze time (from the
-    operator-owned evidence copy in operator/runtime-inputs.json)."""
-    path = exp / "operator" / "runtime-inputs.json"
-    if path.is_file():
-        try:
-            return (json.loads(path.read_text()) or {}).get(name, "?")
-        except json.JSONDecodeError:
-            return "?"
-    return "?"
 
 
 def cmd_run(args: argparse.Namespace) -> int:

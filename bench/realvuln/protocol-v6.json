@@ -141,7 +141,6 @@
   "pi_version": "0.85.1",
   "built_at": 1790190292.1532152
  },
- "isolation_evidence_sha256": "b421b20179e7e906b0c1739480498c4f38bde7503834ea6e3839e8bcef4a6063",
  "purpose": "scored",
  "admission": {
   "$comment": "v6 admission (plan step D): file references resolved and verified at freeze \u2014 contents parsed, gates all passed, image_id and runtime_tree_sha256 bound to the frozen runtime. Fill with the relfix evidence paths at scored time; a bare hash string is not admissible.",

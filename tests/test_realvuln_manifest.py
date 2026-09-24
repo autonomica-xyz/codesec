@@ -52,7 +52,6 @@ def _spec(tmp_path: Path, repos=("realvuln-a", "realvuln-b")) -> dict:
         "primary_metric": "strict micro F3 mean over three trials",
         "thresholds": {},
         "image": {"tag": "codesec-iso", "image_id": "sha256:" + "ab" * 32},
-        "isolation_evidence_sha256": "0" * 64,
     }
 
 

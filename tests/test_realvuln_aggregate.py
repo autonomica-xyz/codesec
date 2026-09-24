@@ -94,7 +94,6 @@ def _freeze_exp(tmp_path: Path, repos, monkeypatch) -> Path:
         "budgets": {}, "failure_scoring": {}, "thresholds": {},
         "primary_metric": "strict micro F3",
         "image": {"tag": "codesec-iso", "image_id": "sha256:" + "ab" * 32},
-        "isolation_evidence_sha256": "0" * 64,
     })
     spec_path = tmp_path / "protocol.json"
     spec_path.write_text(json.dumps(spec))

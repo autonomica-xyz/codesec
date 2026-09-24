@@ -1186,3 +1186,19 @@ distinction maintained).
   to the claude CLI; installing it would add an unused heavyweight
   dependency. Skip messages now state the descope. The remaining live-bench
   marker skip stays by design.
+
+## De-engineering pass (2026-09-24)
+
+- Removed the vestigial `isolation_evidence_sha256` spec/manifest field
+  everywhere (admission evidence references are the authority); collapsed
+  the `wrong_state` validity mode into `integrity` (the problem message
+  still distinguishes the case); dropped `operator/runtime-inputs.json`
+  and its per-input digest plumbing — the drift error now names only
+  added/removed inputs and points at `manifest.runtime.inputs`.
+- Added `bench/realvuln/calib_run.py`: one command for the previously
+  manual freeze → test-gateway → run → teardown dance (records bound to
+  the experiment, bridge egress, guaranteed teardown; `--no-gateway` for
+  dead-endpoint runs).
+- Deliberately NOT done: de-sleeping the snapshot-poll tests (~15 s of the
+  8.5-minute suite; `test_realvuln_preflight.py` dominates at ~6 min) —
+  not worth the churn.

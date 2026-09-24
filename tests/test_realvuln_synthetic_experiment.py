@@ -67,7 +67,6 @@ def _spec(tmp_path: Path, repos) -> dict:
         "budgets": {}, "failure_scoring": {}, "thresholds": {},
         "primary_metric": "strict micro F3",
         "image": {"tag": "codesec-iso", "image_id": "sha256:" + "ab" * 32},
-        "isolation_evidence_sha256": "0" * 64,
     }
 
 
