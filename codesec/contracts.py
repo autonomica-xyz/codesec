@@ -252,7 +252,11 @@ def validate_trace_output(
     *,
     expected_sink_file: str | None = None,
     expected_sink_range: tuple[int, int] | None = None,
+    require_sink_frame: bool = True,
 ) -> None:
+    """require_sink_frame=False skips ONLY the final-frame-at-sink
+    invariant; the caller uses it to test whether that invariant is the
+    single remaining violation (trace.py sink-snap)."""
     if payload.get("finding_id") != expected_finding_id:
         raise StageContractError(
             "trace output finding_id does not match request: "
@@ -335,6 +339,7 @@ def validate_trace_output(
             )
     if (
         status == "reachable"
+        and require_sink_frame
         and expected_sink_file is not None
         and expected_sink_range is not None
     ):

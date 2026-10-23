@@ -1,5 +1,5 @@
-"""Stage 7: Feedback — convert reachable traces into new Hunt tasks."""
-
+"""Stage 7: Feedback — turn confirmed findings (with trace annotation)
+into new Hunt tasks."""
 from __future__ import annotations
 
 import logging
@@ -20,17 +20,22 @@ DEFAULT_MAX_NEW_TASKS = 40
 
 async def run_feedback(ctx: StageContext, db: StateDB,
                        max_new_tasks: int = DEFAULT_MAX_NEW_TASKS) -> int:
-    reachable = db.get_reachable_canonical_findings(ctx.run_id)
-    if not reachable:
-        log.info("[%s] feedback: no reachable findings; nothing to seed", ctx.run_id)
+    confirmed = db.get_report_findings(ctx.run_id, policy="confirmed_all")
+    if not confirmed:
+        log.info(
+            "[%s] feedback: no confirmed canonical findings; nothing to seed",
+            ctx.run_id,
+        )
         return 0
 
     sc = ctx.stage("feedback")
     recon_summary = db.get_recon_output(ctx.run_id) or {}
-    payload = [{"finding": f.raw_json, "trace": tr} for f, tr in reachable]
+    payload = [
+        {"finding": f.raw_json, "trace": tr or {}} for f, tr in confirmed
+    ]
 
     feedback_input = {
-        "reachable_traces": payload,
+        "confirmed_traces": payload,
         "recon_summary": truncated_recon_summary(recon_summary),
         "refuted_patterns": refuted_patterns_digest(db, ctx.run_id),
         "max_new_tasks": max_new_tasks,
@@ -70,6 +75,6 @@ async def run_feedback(ctx: StageContext, db: StateDB,
         added += 1
     db.record_agent_result(ctx.run_id, "feedback", None, result)
     db.add_artifact(ctx.run_id, "feedback", None, "jsonl", str(result.artifact_path))
-    log.info("[%s] feedback: %d new tasks from %d reachable traces",
-             ctx.run_id, added, len(reachable))
+    log.info("[%s] feedback: %d new tasks from %d confirmed findings",
+             ctx.run_id, added, len(confirmed))
     return added

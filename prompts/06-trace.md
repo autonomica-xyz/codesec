@@ -123,6 +123,13 @@ A single JSON object matching `schemas/trace.schema.json`. No prose.
 - If a `repair` object is present in the input, a previous attempt
   failed a contract check: read `failed_invariant`, fix exactly that,
   and re-emit the complete corrected object.
+- Static mode has no runtime **by design**. The absence of a deployed
+  app, an unresolvable example host in the repo's config, or a canary
+  marker you were never given are NOT uncertainty — they are the
+  expected conditions of this mode. `uncertain` requires a concrete
+  missing fact about the SOURCE (an unresolved framework boundary, a
+  config or registration you cannot find, generated dispatch). Never
+  hedge with "could not verify at runtime" here.
 - If you cannot complete the trace within the token budget, emit
   `status: "uncertain"` and `reachable: null` with a blocker of kind
   `other` describing what's missing, and a typed `uncertainty`. Don't

@@ -131,7 +131,7 @@ def run_preflight(spec: dict, *, offline: bool = True) -> dict:
         assert settings["temperature"] == 0.6
         assert settings["max_tokens"] == 32768
         assert "top_p" not in settings["request_params"]
-        assert config.report_policy == "confirmed_reachable"
+        assert config.report_policy == "confirmed_except_unreachable"
         assert config.report_renderer == "deterministic"
         gates.append(_gate(
             "effective_request_shape", "passed",

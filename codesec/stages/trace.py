@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 
 from codesec.contracts import (
     StageContractError,
@@ -20,6 +21,61 @@ log = logging.getLogger(__name__)
 # P04: bounded semantic-repair budget for trace contract violations
 # (counted against normal time/token budgets; every attempt preserved).
 _TRACE_SEMANTIC_REPAIRS = 2
+
+# Deterministic sink-snap (audit-glm53-2026-09-22: sink_mismatch was the
+# single largest source of uncertain traces — 95/178 — and it is a
+# serialization failure, never evidence about reachability). Offline
+# replay of the saved matrix (2026-09-29) measured the actual shape:
+# 81/95 chains contain a frame AT the authoritative sink before the end
+# and then keep serializing the deeper data flow past it (78 recovered
+# here; 3 were sink-first/reversed); line-level near-misses are ~1%.
+# So the recovery is truncation at the sink, applied only when the
+# sink-frame invariant is the ONLY remaining violation after exhausted
+# repairs.
+def _sink_snap_payload(payload: dict, f: Finding) -> dict | None:
+    """Truncate a chain that runs past the authoritative sink.
+
+    Eligible only when the verdict is `reachable`, some frame sits at
+    the authoritative sink (same file, inside the line range) BEFORE
+    the end of the chain, and the FIRST frame is not already inside
+    the sink range (a sink-first chain is reversed serialization — a
+    different error the snap must not paper over). The chain is cut at
+    the LAST in-range frame: a prefix of the tracer's own chain, frames
+    kept verbatim — nothing is appended, reordered, or invented.
+    Returns the snapped payload, or None when ineligible."""
+    if payload.get("status") != "reachable":
+        return None
+    chain = list(payload.get("call_chain") or [])
+    if not chain:
+        return None
+    start, end = f.line_start, f.line_end
+    sink_file = Path(f.file).as_posix()
+
+    def _in_range(frame: dict) -> bool:
+        line = frame.get("line")
+        return (
+            Path(str(frame.get("file", ""))).as_posix() == sink_file
+            and isinstance(line, int)
+            and start <= line <= end
+        )
+
+    hits = [i for i, frame in enumerate(chain) if _in_range(frame)]
+    if not hits or hits[-1] == len(chain) - 1:
+        return None  # no mid-chain sink frame to truncate at
+    if hits[0] == 0:
+        return None  # sink-first serialization: reversed, not overshoot
+    cut = hits[-1]
+    snapped = dict(payload)
+    snapped["call_chain"] = chain[: cut + 1]
+    dropped = len(chain) - cut - 1
+    snapped["rationale"] = (
+        f"{payload.get('rationale') or ''} "
+        f"[harness sink-snap] the tracer serialized {dropped} frame(s) "
+        f"past the authoritative sink {f.file}:{start}-{end}; the chain "
+        f"was truncated at the sink (frame {cut + 1} of {len(chain)}); "
+        f"no frames were edited, moved, or invented."
+    ).strip()
+    return snapped
 
 
 def _uncertain_payload(finding_id: str, rationale: str, *, kind: str,
@@ -63,6 +119,9 @@ async def run_trace(ctx: StageContext, db: StateDB) -> int:
         sc.options.get("canary_markers", True)
     )
     require_marker = bool(sc.options.get("require_canary_marker", True))
+    # Deterministic sink-snap on exhausted sink-mismatch repairs (see
+    # _sink_snap_payload); `sink_snap: false` in stages.yaml disables it.
+    snap_enabled = bool(sc.options.get("sink_snap", True))
     recon_summary = db.get_recon_output(ctx.run_id) or {}
 
     log.info(
@@ -101,7 +160,9 @@ async def run_trace(ctx: StageContext, db: StateDB) -> int:
                 db, ctx.run_id, "trace", f.finding_id, user_input
             )
 
-            def _validate(payload: dict) -> StageContractError | None:
+            def _validate(
+                payload: dict, *, require_sink_frame: bool = True
+            ) -> StageContractError | None:
                 try:
                     validate_trace_output(
                         f.finding_id,
@@ -109,6 +170,7 @@ async def run_trace(ctx: StageContext, db: StateDB) -> int:
                         ctx.repo_path,
                         expected_sink_file=f.file,
                         expected_sink_range=(f.line_start, f.line_end),
+                        require_sink_frame=require_sink_frame,
                     )
                     # W6: in live mode a `reachable` verdict must be backed
                     # by an observed canary — exact-marker confirmation is
@@ -265,6 +327,40 @@ async def run_trace(ctx: StageContext, db: StateDB) -> int:
                 error = _validate(payload)
 
             if error is not None:
+                # Deterministic sink-snap fallback: when the sink-frame
+                # invariant is the ONLY remaining violation, recover the
+                # verdict instead of discarding it (see
+                # _sink_snap_payload). Any other surviving violation
+                # falls through to the typed-uncertain path below.
+                snapped = None
+                if (
+                    snap_enabled
+                    and _validate(payload, require_sink_frame=False) is None
+                ):
+                    snapped = _sink_snap_payload(payload, f)
+                    if snapped is not None and _validate(snapped) is not None:
+                        snapped = None
+                if snapped is not None:
+                    counters["reachable"] += 1
+                    db.record_stage_event(
+                        ctx.run_id,
+                        "trace",
+                        {
+                            "category": "sink_snap",
+                            "mode": "truncate_at_sink",
+                            "finding_id": f.finding_id,
+                            "repairs": repairs_used,
+                            "original_frames": len(payload.get("call_chain") or []),
+                            "kept_frames": len(snapped.get("call_chain") or []),
+                            "sink": {
+                                "file": f.file,
+                                "line_start": f.line_start,
+                                "line_end": f.line_end,
+                            },
+                        },
+                    )
+                    db.add_trace(ctx.run_id, f.finding_id, snapped)
+                    return
                 log.warning(
                     "[%s] trace %s violated semantic contract after %d "
                     "repairs: %s",

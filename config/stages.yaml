@@ -43,6 +43,10 @@ stages:
     tools: [Read, Grep, Glob, Bash]
     canary_markers: true          # W6: exact-marker verification when live_target set
     require_canary_marker: true   # W6: reachable requires marker.verified when applicable
+    sink_snap: true               # truncate a chain that runs PAST the authoritative
+                                  # sink when that is the only contract violation left
+                                  # after repairs (saved-matrix replay: 84/95 sink_mismatch
+                                  # traces were overshoot, not wrong locations)
   feedback:
     model: claude-sonnet-4-6
     concurrency: 1

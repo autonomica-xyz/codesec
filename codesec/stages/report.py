@@ -422,11 +422,13 @@ def _policy_note(ctx: StageContext) -> dict:
 
 
 def _review_queue_payload(ctx: StageContext, db: StateDB) -> dict:
-    """Everything kept out of the primary report, with explicit reasons.
+    """Everything needing review, with explicit reasons.
 
-    Includes: needs-more-info findings, uncertain/untraced/unreachable
-    traces (including policy exclusions), failed tasks, and recorded
-    degraded/failure stage events. Nothing disappears from the record."""
+    Includes: needs-more-info findings, confirmed canonicals whose trace
+    is not `reachable` (uncertain/untraced/unreachable — annotation even
+    when the policy ships them, plus explicit `excluded_by_policy` rows
+    when it does not), failed tasks, and recorded degraded/failure stage
+    events. Nothing disappears from the record."""
     policy = ctx.config.report_policy
     review_findings: dict[str, dict] = {}
 

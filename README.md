@@ -24,10 +24,13 @@ which argues that real-world vulnerability discovery comes from:
    boundary above it") rather than one exhaustive agent.
 2. **Deliberate disagreement** — a second agent, on a different model, that
    tries to *disprove* the first agent's findings.
-3. **A reachability trace** as the gating step — most "is this code buggy?"
+3. **A reachability trace** as the grading step — most "is this code buggy?"
    findings are noise unless an attacker-controlled input can actually reach
-   the sink from outside the system.
-4. **A feedback loop** so reachable bugs in one place automatically seed
+   the sink from outside the system. The trace annotates every confirmed
+   finding; only an *engine-proven* unreachable path (concrete blocker)
+   removes one from the report, so a tracer failure can never hide a
+   serious finding.
+4. **A feedback loop** so confirmed bugs in one place automatically seed
    hunts for the same pattern elsewhere.
 
 codesec implements this as an 8-stage pipeline and then goes further:
@@ -45,7 +48,7 @@ harness cross-run memory.
 | 4 | Gapfill  | sonnet | Re-queue under-covered areas |
 | 5 | Dedupe   | sonnet | Cluster findings by root cause |
 | 6 | Trace    | opus  | Prove attacker-controlled input reaches the sink |
-| 7 | Feedback | sonnet | Turn reachable traces into new Hunt tasks |
+| 7 | Feedback | sonnet | Turn confirmed findings + traces into new Hunt tasks |
 | 8 | Report   | sonnet | Schema-validated structured report |
 
 Each stage is one markdown prompt in `prompts/` + one JSON Schema in

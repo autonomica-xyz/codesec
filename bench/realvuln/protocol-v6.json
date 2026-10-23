@@ -102,11 +102,11 @@
   "fingerprint_sha256": "cf9d42d2da75e9ebdefebe30e58b9a33eb2711e2f9d916ec8dfada8e35d59adf"
  },
  "report": {
-  "policy": "confirmed_reachable",
+  "policy": "confirmed_except_unreachable",
   "renderer": "deterministic",
   "secondary": [
    "confirmed_all",
-   "confirmed_except_unreachable"
+   "confirmed_reachable"
   ]
  },
  "budgets": {

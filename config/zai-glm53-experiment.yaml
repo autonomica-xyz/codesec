@@ -6,7 +6,7 @@
 #   reasoning  thinking.type=enabled + reasoning_effort=low (never "off")
 #   sampling   temperature 0.6, no top_p, max_tokens 32768/request
 #   context    262144 client ceiling (server support verified in calibration)
-#   renderer   deterministic report; policy confirmed_reachable (primary)
+#   renderer   deterministic report; policy confirmed_except_unreachable (primary)
 #
 # This file is the codesec-side source of truth; its canonical hash (not the
 # path) goes into the experiment manifest. The reasoning protocol is
@@ -16,7 +16,7 @@ defaults:
   permission_mode: acceptEdits
   repair_attempts: 1
 
-report_policy: confirmed_reachable
+report_policy: confirmed_except_unreachable
 report_renderer: deterministic
 
 model_profiles:

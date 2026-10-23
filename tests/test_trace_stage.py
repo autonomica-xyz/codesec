@@ -721,3 +721,204 @@ async def test_p04_static_prompt_selected_and_live_prompt_has_markers(
     for name in ("01-recon", "02-hunt", "03-validate", "03-arbiter", "06-trace"):
         static_text = static_ctx.prompt(name).read_text()
         assert "server.local" not in static_text, name
+
+
+# --- Deterministic sink-snap (audit-glm53-2026-09-22) -------------------------
+#
+# sink_mismatch drove 95/178 uncertain traces in the GLM53 audit: the
+# tracer proved a path but serialized the final frame off the
+# authoritative sink. That is an operational near-miss, never evidence
+# about reachability, so it is recovered deterministically instead of
+# discarding the verdict.
+
+
+def _context_with_trace_options(repo: Path, options: dict) -> StageContext:
+    config = HarnessConfig(
+        stages={
+            "trace": StageConfig(
+                name="trace",
+                model="reviewer",
+                concurrency=1,
+                tools=["Read"],
+                max_turns=2,
+                permission_mode="acceptEdits",
+                repair_attempts=0,
+                options=options,
+            )
+        }
+    )
+    return StageContext(run_id="run", repo_path=repo, config=config)
+
+
+def _overshoot_payload(**over):
+    p = {
+        "finding_id": "f_1",
+        "status": "reachable",
+        "reachable": True,
+        "confidence": 0.7,
+        "entry_points": [{"kind": "http_route", "location": "app.py:2"}],
+        "call_chain": [
+            {"file": "app.py", "function": "preview", "line": 2},
+            # sink range is 5..10: this frame IS the authoritative sink...
+            {"file": "app.py", "function": "render", "line": 7},
+            # ...but the tracer kept serializing the deeper data flow
+            {"file": "app.py", "function": "model", "line": 14},
+        ],
+        "external_inputs": ["body"],
+        "rationale": "Path proven; the chain runs past the sink.",
+    }
+    p.update(over)
+    return p
+
+
+async def test_sink_snap_truncates_overshooting_chain_after_repairs(
+    tmp_path, monkeypatch
+):
+    """The measured dominant failure (saved-matrix replay 2026-09-29:
+    84/95 sink_mismatch traces): the chain passes THROUGH the sink and
+    continues into the deeper data flow. The verdict is recovered by
+    truncating at the sink — frames kept verbatim, nothing invented."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    db = _seeded_trace_db(repo)
+    overshoot = _overshoot_payload()
+    calls = {"n": 0}
+    agent = _agent_returning_dispatch(
+        iter([overshoot, dict(overshoot), dict(overshoot)]), calls_holder=calls
+    )
+    monkeypatch.setattr(trace_stage, "run_agent", agent)
+
+    reachable = await trace_stage.run_trace(_trace_context(repo), db)
+    trace = db.get_trace("run", "f_1")
+
+    assert calls["n"] == 3  # initial + both repairs; the snap fires after
+    assert reachable == 1
+    assert trace["status"] == "reachable"
+    # truncated at the in-range frame; the post-sink frame is dropped
+    assert [
+        (fr["file"], fr["line"]) for fr in trace["call_chain"]
+    ] == [("app.py", 2), ("app.py", 7)]
+    assert "sink-snap" in trace["rationale"]
+    assert "truncated" in trace["rationale"]
+    events = db.get_stage_events("run", "trace")
+    snap_events = [e for e in events if e["category"] == "sink_snap"]
+    assert snap_events and snap_events[0]["mode"] == "truncate_at_sink"
+    assert snap_events[0]["original_frames"] == 3
+    assert snap_events[0]["kept_frames"] == 2
+    assert [
+        f.finding_id for f, _ in db.get_reachable_canonical_findings("run")
+    ] == ["f_1"]
+
+
+async def test_sink_snap_skipped_without_mid_chain_sink_frame(
+    tmp_path, monkeypatch
+):
+    """No frame sits at the authoritative sink (the near-miss case the
+    original design assumed — measured ~1% of real traces): nothing to
+    truncate at, so the verdict stays typed-uncertain."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    db = _seeded_trace_db(repo)
+    near_miss = _overshoot_payload(call_chain=[
+        {"file": "app.py", "function": "preview", "line": 2},
+        {"file": "app.py", "function": "other", "line": 30},
+    ])
+    agent = _agent_returning_dispatch(
+        iter([near_miss, dict(near_miss), dict(near_miss)])
+    )
+    monkeypatch.setattr(trace_stage, "run_agent", agent)
+
+    await trace_stage.run_trace(_trace_context(repo), db)
+    trace = db.get_trace("run", "f_1")
+
+    assert trace["status"] == "uncertain"
+    assert trace["uncertainty"]["reason_code"] == "sink_mismatch"
+
+
+
+async def test_sink_snap_skipped_for_reversed_chain(tmp_path, monkeypatch):
+    """A chain whose FIRST frame already sits inside the sink range is
+    sink-first (reversed) serialization — a different error the snap
+    must not paper over."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    db = _seeded_trace_db(repo)
+    reversed_chain = _overshoot_payload(call_chain=[
+        {"file": "app.py", "function": "render", "line": 7},
+        {"file": "app.py", "function": "preview", "line": 2},
+    ])
+    agent = _agent_returning_dispatch(
+        iter([reversed_chain, dict(reversed_chain), dict(reversed_chain)])
+    )
+    monkeypatch.setattr(trace_stage, "run_agent", agent)
+
+    await trace_stage.run_trace(_trace_context(repo), db)
+    trace = db.get_trace("run", "f_1")
+
+    assert trace["status"] == "uncertain"
+    assert trace["uncertainty"]["reason_code"] == "sink_mismatch"
+
+
+async def test_sink_snap_requires_no_other_violation(tmp_path, monkeypatch):
+    """An otherwise-eligible overshoot plus a second contract violation (missing
+    external_inputs) stays uncertain — the snap only fires when the
+    sink-frame invariant is the single remaining violation."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    db = _seeded_trace_db(repo)
+    incomplete = _overshoot_payload()
+    del incomplete["external_inputs"]
+    agent = _agent_returning_dispatch(
+        iter([incomplete, dict(incomplete), dict(incomplete)])
+    )
+    monkeypatch.setattr(trace_stage, "run_agent", agent)
+
+    await trace_stage.run_trace(_trace_context(repo), db)
+    trace = db.get_trace("run", "f_1")
+
+    assert trace["status"] == "uncertain"
+    assert trace["uncertainty"]["reason_code"] == "other_contract_violation"
+
+
+async def test_sink_snap_disabled_by_config(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    db = _seeded_trace_db(repo)
+    overshoot = _overshoot_payload()
+    agent = _agent_returning_dispatch(
+        iter([overshoot, dict(overshoot), dict(overshoot)])
+    )
+    monkeypatch.setattr(trace_stage, "run_agent", agent)
+    ctx = _context_with_trace_options(repo, {"sink_snap": False})
+
+    await trace_stage.run_trace(ctx, db)
+    trace = db.get_trace("run", "f_1")
+
+    assert trace["status"] == "uncertain"
+    assert trace["uncertainty"]["reason_code"] == "sink_mismatch"
+
+
+async def test_sink_snap_does_not_bypass_live_marker_rule(
+    tmp_path, monkeypatch
+):
+    """In live mode an unverified canary marker is still fatal to a
+    reachable verdict: the snap repairs sink placement only, never the
+    marker oracle."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    db = _seeded_trace_db(repo)
+    overshoot = _overshoot_payload()
+    agent = _agent_returning_dispatch(
+        iter([overshoot, dict(overshoot), dict(overshoot)])
+    )
+    monkeypatch.setattr(trace_stage, "run_agent", agent)
+
+    await trace_stage.run_trace(_ctx_with_live(repo), db)
+    trace = db.get_trace("run", "f_1")
+    assert trace["status"] == "uncertain"
+    # the snap must not fire: the marker oracle is still unmet
+    assert not any(
+        e["category"] == "sink_snap"
+        for e in db.get_stage_events("run", "trace")
+    )
+    assert "call_chain" not in trace  # engine-written uncertain row
